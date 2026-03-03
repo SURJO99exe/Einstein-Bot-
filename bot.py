@@ -124,47 +124,47 @@ def escape_markdown(text: str, version: int = 1) -> str:
 
 async def setup_commands(application):
     """Set up the bot command menu in Telegram"""
-        commands = [
-        BotCommand("start", " Start the bot"),
-        BotCommand("help", " Show help menu"),
-        BotCommand("stop", " Stop all active operations"),
-        BotCommand("clear", " Clear chat messages"),
-        BotCommand("continue", " Continue pending tasks"),
-        BotCommand("files", " List workspace files"),
-        BotCommand("smart", " AI Smart Command Processor"),
-        BotCommand("ai", " Chat with OpenAI"),
-        BotCommand("ollama", " Free local AI chat"),
-        BotCommand("claude", " Chat with Claude AI"),
-        BotCommand("search", " Real-time web search"),
-        BotCommand("wiki", " Search Wikipedia"),
-        BotCommand("video", " Download video (YT/FB/TT)"),
-        BotCommand("music", " Download music"),
-        BotCommand("play", " Stream video/audio"),
-        BotCommand("yt", " YouTube search tools"),
-        BotCommand("spotify", " Spotify control"),
-        BotCommand("thumb", " AI Thumbnail Generator"),
-        BotCommand("facebook", " Facebook control"),
-        BotCommand("twitter", " Twitter/X control"),
-        BotCommand("tiktok", " TikTok control"),
-        BotCommand("whatsapp", " WhatsApp control"),
-        BotCommand("discord", " Send Discord message"),
-        BotCommand("slack", " Send Slack message"),
-        BotCommand("github", " GitHub control"),
-        BotCommand("gmail", " Gmail control"),
-        BotCommand("note", " Notes manager"),
-        BotCommand("remind", " Reminders tasks"),
-        BotCommand("calendar", " Calendar management"),
-        BotCommand("calc", " Calculator"),
-        BotCommand("translate", " Translate message"),
-        BotCommand("weather", " Weather info"),
-        BotCommand("news", " Latest global news"),
-        BotCommand("crypto", " Crypto prices"),
-        BotCommand("currency", " Exchange rates"),
-        BotCommand("time", " World time"),
-        BotCommand("ip", " IP lookup"),
-        BotCommand("phone", " Phone control"),
-        BotCommand("utils", " General utilities"),
-        BotCommand("botprofile", " Manage bot profile")
+    commands = [
+        BotCommand("start", "🚀 Start the bot"),
+        BotCommand("help", "❓ Show help menu"),
+        BotCommand("stop", "🛑 Stop all active operations"),
+        BotCommand("clear", "🧹 Clear chat messages"),
+        BotCommand("continue", "🔄 Continue pending tasks"),
+        BotCommand("files", "📁 List workspace files"),
+        BotCommand("smart", "🧠 AI Smart Command Processor"),
+        BotCommand("ai", "🤖 Chat with OpenAI"),
+        BotCommand("ollama", "🦙 Free local AI chat"),
+        BotCommand("claude", "🧠 Chat with Claude AI"),
+        BotCommand("search", "🔍 Real-time web search"),
+        BotCommand("wiki", "📖 Search Wikipedia"),
+        BotCommand("video", "📥 Download video (YT/FB/TT)"),
+        BotCommand("music", "🎵 Download music"),
+        BotCommand("play", "▶️ Stream video/audio"),
+        BotCommand("yt", "📺 YouTube search & tools"),
+        BotCommand("spotify", "🎧 Spotify control"),
+        BotCommand("thumb", "🖼️ AI Thumbnail Generator"),
+        BotCommand("facebook", "📘 Facebook control"),
+        BotCommand("twitter", "🐦 Twitter/X control"),
+        BotCommand("tiktok", "🎵 TikTok control"),
+        BotCommand("whatsapp", "💬 WhatsApp control"),
+        BotCommand("discord", "💬 Send Discord message"),
+        BotCommand("slack", "💼 Send Slack message"),
+        BotCommand("github", "🐙 GitHub control"),
+        BotCommand("gmail", "📧 Gmail control"),
+        BotCommand("note", "📝 Notes manager"),
+        BotCommand("remind", "⏰ Reminders & tasks"),
+        BotCommand("calendar", "📅 Calendar management"),
+        BotCommand("calc", "🧮 Calculator"),
+        BotCommand("translate", "🌍 Translate message"),
+        BotCommand("weather", "🌤️ Weather info"),
+        BotCommand("news", "📰 Latest global news"),
+        BotCommand("crypto", "🪙 Crypto prices"),
+        BotCommand("currency", "💱 Exchange rates"),
+        BotCommand("time", "🕒 World time"),
+        BotCommand("ip", "🌐 IP lookup"),
+        BotCommand("phone", "📱 Phone control"),
+        BotCommand("utils", "🛠️ General utilities"),
+        BotCommand("botprofile", "🤖 Manage bot profile")
     ]
     
     await application.bot.set_my_commands(commands)
@@ -180,26 +180,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Set up command menu when user starts the bot
     await setup_commands(context.application)
     
-        keyboard = [
-        [" Status", " Files", " Continue"],
-        [" Clear", " Stop", " AI Smart"],
+    keyboard = [
+        ["📊 Status", "📂 Files", "🔄 Continue"],
+        ["🧹 Clear", "🛑 Stop", "🧠 AI Smart"],
         ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        [" Video", " Music", " Play"],
+        ["📥 Video", "🎵 Music", "▶️ Play"],
         ["🤖 Chat", "🐙 GitHub", "🎧 Spotify"],
-        [" News", " Crypto", " Currency"],
-        [" Gmail", " Notes", " Remind"],
-        [" Phone", " Browser", " Capture"],
-        [" Home", " Discord", " Utils"],
-        [" Help"]
-    ],
-        ['??? Weather', '?? Search', '????? Einstein'],
-        ['?? Browser', '?? Capture', '??? Utils'],
-        ['?? Phone', '?? Share Loc', '?? Media'],
-        ['?? YT Search', '?? Chat', '?? GitHub'],
-        ['?? Gmail', '?? Notes', '? Remind'],
-        ['?? Calendar', '?? Travel', '?? Manager'],
-        ['?? SmartHome', '?? Discord', '?? AI Smart'],
-        ['?? Help']
+        ["📰 News", "🪙 Crypto", "💱 Currency"],
+        ["📧 Gmail", "📝 Notes", "⏰ Remind"],
+        ["📱 Phone", "🌐 Browser", "📸 Capture"],
+        ["🏠 Home", "💬 Discord", "🛠️ Utils"],
+        ["📖 Help"]
     ]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     
@@ -340,18 +331,8 @@ async def facebook_control(update: Update, action: str = None):
     page_id = os.getenv("FACEBOOK_PAGE_ID")
 
     if not action:
-            keyboard = [
-        [" Status", " Files", " Continue"],
-        [" Clear", " Stop", " AI Smart"],
-        ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        [" Video", " Music", " Play"],
-        ["🤖 Chat", "🐙 GitHub", "🎧 Spotify"],
-        [" News", " Crypto", " Currency"],
-        [" Gmail", " Notes", " Remind"],
-        [" Phone", " Browser", " Capture"],
-        [" Home", " Discord", " Utils"],
-        [" Help"]
-    ],
+        keyboard = [
+            [InlineKeyboardButton("?? Page Stats", callback_data='fb_stats')],
             [InlineKeyboardButton("?? Create Post", callback_data='fb_post_prompt')],
             [InlineKeyboardButton("?? Upload Photo", callback_data='fb_photo_prompt')],
             [InlineKeyboardButton("?? Latest Comments", callback_data='fb_comments')],
@@ -422,18 +403,8 @@ async def facebook_control(update: Update, action: str = None):
 async def youtube_control(update: Update, action: str = None):
     """YouTube search, trending, and viral video browser"""
     if not action:
-            keyboard = [
-        [" Status", " Files", " Continue"],
-        [" Clear", " Stop", " AI Smart"],
-        ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        [" Video", " Music", " Play"],
-        ["🤖 Chat", "🐙 GitHub", "🎧 Spotify"],
-        [" News", " Crypto", " Currency"],
-        [" Gmail", " Notes", " Remind"],
-        [" Phone", " Browser", " Capture"],
-        [" Home", " Discord", " Utils"],
-        [" Help"]
-    ],
+        keyboard = [
+            [InlineKeyboardButton("?? Trending Now", callback_data='yt_trending')],
             [InlineKeyboardButton("?? Viral Worldwide", callback_data='yt_viral')],
             [InlineKeyboardButton("?? Search YouTube", callback_data='yt_search_prompt')],
             [InlineKeyboardButton("?? Video Player Info", callback_data='yt_player_help')],
@@ -516,18 +487,11 @@ async def youtube_search(update: Update, query: str):
                 channel = item['snippet']['channelTitle']
                 thumbnail_url = item['snippet']['thumbnails']['high']['url']
                 
-                    keyboard = [
-        [" Status", " Files", " Continue"],
-        [" Clear", " Stop", " AI Smart"],
-        ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        [" Video", " Music", " Play"],
-        ["🤖 Chat", "🐙 GitHub", "🎧 Spotify"],
-        [" News", " Crypto", " Currency"],
-        [" Gmail", " Notes", " Remind"],
-        [" Phone", " Browser", " Capture"],
-        [" Home", " Discord", " Utils"],
-        [" Help"]
-    ],
+                keyboard = [
+                    [
+                        InlineKeyboardButton("?? Play Audio", callback_data=f"dl_audio_{video_id}"),
+                        InlineKeyboardButton("?? Play Video", callback_data=f"dl_video_{video_id}")
+                    ],
                     [
                         InlineKeyboardButton("?? Open YouTube", url=video_url)
                     ]
@@ -586,18 +550,8 @@ async def youtube_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def tiktok_control(update: Update, action: str = None):
     """TikTok account control features"""
     if not action:
-            keyboard = [
-        [" Status", " Files", " Continue"],
-        [" Clear", " Stop", " AI Smart"],
-        ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        [" Video", " Music", " Play"],
-        ["🤖 Chat", "🐙 GitHub", "🎧 Spotify"],
-        [" News", " Crypto", " Currency"],
-        [" Gmail", " Notes", " Remind"],
-        [" Phone", " Browser", " Capture"],
-        [" Home", " Discord", " Utils"],
-        [" Help"]
-    ],
+        keyboard = [
+            [InlineKeyboardButton("?? Account Stats", callback_data='tt_stats')],
             [InlineKeyboardButton("?? Upload Video", callback_data='tt_upload')],
             [InlineKeyboardButton("?? Comments", callback_data='tt_comments')],
         ]
@@ -625,18 +579,11 @@ async def phone_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Control phone settings (Flash, Volume, etc.)"""
     if not await check_auth(update): return
     
-        keyboard = [
-        [" Status", " Files", " Continue"],
-        [" Clear", " Stop", " AI Smart"],
-        ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        [" Video", " Music", " Play"],
-        ["🤖 Chat", "🐙 GitHub", "🎧 Spotify"],
-        [" News", " Crypto", " Currency"],
-        [" Gmail", " Notes", " Remind"],
-        [" Phone", " Browser", " Capture"],
-        [" Home", " Discord", " Utils"],
-        [" Help"]
-    ],
+    keyboard = [
+        [
+            InlineKeyboardButton("?? Flash ON", callback_data='phone_flash_on'),
+            InlineKeyboardButton("?? Flash OFF", callback_data='phone_flash_off')
+        ],
         [
             InlineKeyboardButton("?? Max Volume", callback_data='phone_vol_max'),
             InlineKeyboardButton("?? Mute", callback_data='phone_vol_mute')
@@ -669,18 +616,8 @@ async def language_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Language selection command - supports multi-language interface"""
     if not context.args:
         # Show language selection menu
-            keyboard = [
-        [" Status", " Files", " Continue"],
-        [" Clear", " Stop", " AI Smart"],
-        ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        [" Video", " Music", " Play"],
-        ["🤖 Chat", "🐙 GitHub", "🎧 Spotify"],
-        [" News", " Crypto", " Currency"],
-        [" Gmail", " Notes", " Remind"],
-        [" Phone", " Browser", " Capture"],
-        [" Home", " Discord", " Utils"],
-        [" Help"]
-    ],
+        keyboard = [
+            [InlineKeyboardButton("???? English", callback_data='lang_en')],
             [InlineKeyboardButton("???? ????? (Bengali)", callback_data='lang_bn')],
             [InlineKeyboardButton("???? ?????? (Hindi)", callback_data='lang_hi')],
             [InlineKeyboardButton("???? Espa�ol (Spanish)", callback_data='lang_es')],
@@ -975,18 +912,8 @@ async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Wake up Einstein and show the custom command keyboard"""
-        keyboard = [
-        [" Status", " Files", " Continue"],
-        [" Clear", " Stop", " AI Smart"],
-        ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        [" Video", " Music", " Play"],
-        ["🤖 Chat", "🐙 GitHub", "🎧 Spotify"],
-        [" News", " Crypto", " Currency"],
-        [" Gmail", " Notes", " Remind"],
-        [" Phone", " Browser", " Capture"],
-        [" Home", " Discord", " Utils"],
-        [" Help"]
-    ],
+    keyboard = [
+        [InlineKeyboardButton("?? Status", callback_id="status"), InlineKeyboardButton("?? Files", callback_data="files"), InlineKeyboardButton("?? CMD", callback_id="cmd")],
         [InlineKeyboardButton("??? Weather", callback_id="weather"), InlineKeyboardButton("?? Search", callback_id="search"), InlineKeyboardButton("????? Einstein", callback_id="ai")],
         [InlineKeyboardButton("?? Browser", callback_id="browser"), InlineKeyboardButton("?? Capture", callback_id="capture"), InlineKeyboardButton("??? Utils", callback_id="utils")],
         [InlineKeyboardButton("?? Social", callback_id="social"), InlineKeyboardButton("?? Media", callback_id="media"), InlineKeyboardButton("?? YT Search", callback_id="yt")],
@@ -5195,18 +5122,11 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "?? <i>Tip: Reply to any video with /gif to convert!</i>"
     )
     
-        keyboard = [
-        [" Status", " Files", " Continue"],
-        [" Clear", " Stop", " AI Smart"],
-        ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        [" Video", " Music", " Play"],
-        ["🤖 Chat", "🐙 GitHub", "🎧 Spotify"],
-        [" News", " Crypto", " Currency"],
-        [" Gmail", " Notes", " Remind"],
-        [" Phone", " Browser", " Capture"],
-        [" Home", " Discord", " Utils"],
-        [" Help"]
-    ],
+    keyboard = [
+        [
+            InlineKeyboardButton("?? Web Panel", url=f"http://127.0.0.1:{WEB_PORT}"),
+            InlineKeyboardButton("????? AI Chat", callback_data="ai_chat_prompt")
+        ],
         [
             InlineKeyboardButton("?? YouTube", callback_data="yt_search_prompt"),
             InlineKeyboardButton("??? Generate Image", callback_data="gen_prompt")
