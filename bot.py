@@ -182,9 +182,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
         keyboard = [
         [" Status", " Files", " Continue"],
-        ["🧹 Clear", "🛑 Stop", "🧠 AI Smart"],
-        ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        ["📥 Video", "🎵 Music", "▶️ Play"],
+        [" Clear", " Stop", " AI Smart"],
+        [" Weather", " Search", " Wiki"],
+        [" Video", " Music", " Play"],
         [" Chat", " GitHub", " Spotify"],
         [" News", " Crypto", " Currency"],
         [" Gmail", " Notes", " Remind"],
@@ -342,9 +342,9 @@ async def facebook_control(update: Update, action: str = None):
     if not action:
             keyboard = [
         [" Status", " Files", " Continue"],
-        ["🧹 Clear", "🛑 Stop", "🧠 AI Smart"],
-        ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        ["📥 Video", "🎵 Music", "▶️ Play"],
+        [" Clear", " Stop", " AI Smart"],
+        [" Weather", " Search", " Wiki"],
+        [" Video", " Music", " Play"],
         [" Chat", " GitHub", " Spotify"],
         [" News", " Crypto", " Currency"],
         [" Gmail", " Notes", " Remind"],
@@ -424,9 +424,9 @@ async def youtube_control(update: Update, action: str = None):
     if not action:
             keyboard = [
         [" Status", " Files", " Continue"],
-        ["🧹 Clear", "🛑 Stop", "🧠 AI Smart"],
-        ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        ["📥 Video", "🎵 Music", "▶️ Play"],
+        [" Clear", " Stop", " AI Smart"],
+        [" Weather", " Search", " Wiki"],
+        [" Video", " Music", " Play"],
         [" Chat", " GitHub", " Spotify"],
         [" News", " Crypto", " Currency"],
         [" Gmail", " Notes", " Remind"],
@@ -518,9 +518,9 @@ async def youtube_search(update: Update, query: str):
                 
                     keyboard = [
         [" Status", " Files", " Continue"],
-        ["🧹 Clear", "🛑 Stop", "🧠 AI Smart"],
-        ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        ["📥 Video", "🎵 Music", "▶️ Play"],
+        [" Clear", " Stop", " AI Smart"],
+        [" Weather", " Search", " Wiki"],
+        [" Video", " Music", " Play"],
         [" Chat", " GitHub", " Spotify"],
         [" News", " Crypto", " Currency"],
         [" Gmail", " Notes", " Remind"],
@@ -588,9 +588,9 @@ async def tiktok_control(update: Update, action: str = None):
     if not action:
             keyboard = [
         [" Status", " Files", " Continue"],
-        ["🧹 Clear", "🛑 Stop", "🧠 AI Smart"],
-        ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        ["📥 Video", "🎵 Music", "▶️ Play"],
+        [" Clear", " Stop", " AI Smart"],
+        [" Weather", " Search", " Wiki"],
+        [" Video", " Music", " Play"],
         [" Chat", " GitHub", " Spotify"],
         [" News", " Crypto", " Currency"],
         [" Gmail", " Notes", " Remind"],
@@ -627,9 +627,9 @@ async def phone_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
         keyboard = [
         [" Status", " Files", " Continue"],
-        ["🧹 Clear", "🛑 Stop", "🧠 AI Smart"],
-        ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        ["📥 Video", "🎵 Music", "▶️ Play"],
+        [" Clear", " Stop", " AI Smart"],
+        [" Weather", " Search", " Wiki"],
+        [" Video", " Music", " Play"],
         [" Chat", " GitHub", " Spotify"],
         [" News", " Crypto", " Currency"],
         [" Gmail", " Notes", " Remind"],
@@ -671,9 +671,9 @@ async def language_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Show language selection menu
             keyboard = [
         [" Status", " Files", " Continue"],
-        ["🧹 Clear", "🛑 Stop", "🧠 AI Smart"],
-        ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        ["📥 Video", "🎵 Music", "▶️ Play"],
+        [" Clear", " Stop", " AI Smart"],
+        [" Weather", " Search", " Wiki"],
+        [" Video", " Music", " Play"],
         [" Chat", " GitHub", " Spotify"],
         [" News", " Crypto", " Currency"],
         [" Gmail", " Notes", " Remind"],
@@ -977,9 +977,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Wake up Einstein and show the custom command keyboard"""
         keyboard = [
         [" Status", " Files", " Continue"],
-        ["🧹 Clear", "🛑 Stop", "🧠 AI Smart"],
-        ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        ["📥 Video", "🎵 Music", "▶️ Play"],
+        [" Clear", " Stop", " AI Smart"],
+        [" Weather", " Search", " Wiki"],
+        [" Video", " Music", " Play"],
         [" Chat", " GitHub", " Spotify"],
         [" News", " Crypto", " Currency"],
         [" Gmail", " Notes", " Remind"],
@@ -5197,9 +5197,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
         keyboard = [
         [" Status", " Files", " Continue"],
-        ["🧹 Clear", "🛑 Stop", "🧠 AI Smart"],
-        ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        ["📥 Video", "🎵 Music", "▶️ Play"],
+        [" Clear", " Stop", " AI Smart"],
+        [" Weather", " Search", " Wiki"],
+        [" Video", " Music", " Play"],
         [" Chat", " GitHub", " Spotify"],
         [" News", " Crypto", " Currency"],
         [" Gmail", " Notes", " Remind"],
@@ -6448,4 +6448,3 @@ if __name__ == '__main__':
         
         # Run Telegram bot
         run_bot()
-
