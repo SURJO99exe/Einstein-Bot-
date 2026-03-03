@@ -124,71 +124,47 @@ def escape_markdown(text: str, version: int = 1) -> str:
 
 async def setup_commands(application):
     """Set up the bot command menu in Telegram"""
-    commands = [
-        # System
-        BotCommand("stop", "?? Stop all active operations"),
-        BotCommand("clear", "?? Clear chat messages"),
-        BotCommand("files", "?? List workspace files"),
-        
-        # Phone Control
-        BotCommand("phone", "?? Control phone (flash, volume, etc)"),
-        
-        # Browser & Capture
-        BotCommand("browser", "?? Browser control (screenshot, navigate)"),
-        BotCommand("screenshot", "?? Desktop or web screenshot"),
-        
-        # Search & AI
-        BotCommand("search", "?? Real-time web search"),
-        BotCommand("weather", "??? Weather information"),
-        BotCommand("ai", "?? Chat with OpenAI"),
-        BotCommand("ollama", "?? Free local AI chat"),
-        BotCommand("claude", "?? Chat with Claude AI"),
-        BotCommand("smart", "?? AI Smart - Natural language command processor"),
-        
-        # Social Media
-        BotCommand("facebook", "?? Facebook page control"),
-        BotCommand("youtube", "?? YouTube channel control"),
-        BotCommand("tiktok", "?? TikTok account control"),
-        BotCommand("twitter", "?? Twitter/X posting"),
-        BotCommand("whatsapp", "?? WhatsApp Business API"),
-        
-        # Developer Tools
-        BotCommand("github", "?? GitHub repository control"),
-        BotCommand("gmail", "?? Gmail email control"),
-        BotCommand("discord", "?? Send Discord message"),
-        BotCommand("slack", "?? Send Slack message"),
-        
-        # Media
-        BotCommand("spotify", "?? Spotify music control"),
-        
-        # Productivity
-        BotCommand("note", "?? Notes manager (Obsidian-like)"),
-        BotCommand("remind", "? Reminders & tasks"),
-        BotCommand("calendar", "?? Calendar management"),
-        
-        # Travel
-        BotCommand("flight", "?? Flight status & check-in"),
-        
-        # File Manager
-        BotCommand("file", "?? File management"),
-        
-        # Smart Home
-        BotCommand("home", "?? Smart home control (Hue)"),
-        
-        # Utilities
-        BotCommand("utils", "??? Utilities (QR, password, news)"),
-        BotCommand("thumb", "??? AI Thumbnail Generator"),
-        BotCommand("botprofile", "?? Manage bot profile & photo"),
-        
-        # Language
-        BotCommand("language", "?? Change language / ???? ?????"),
-        # New Commands
+        commands = [
+        BotCommand("start", " Start the bot"),
+        BotCommand("help", " Show help menu"),
+        BotCommand("stop", " Stop all active operations"),
+        BotCommand("clear", " Clear chat messages"),
+        BotCommand("continue", " Continue pending tasks"),
+        BotCommand("files", " List workspace files"),
+        BotCommand("smart", " AI Smart Command Processor"),
+        BotCommand("ai", " Chat with OpenAI"),
+        BotCommand("ollama", " Free local AI chat"),
+        BotCommand("claude", " Chat with Claude AI"),
+        BotCommand("search", " Real-time web search"),
+        BotCommand("wiki", " Search Wikipedia"),
+        BotCommand("video", " Download video (YT/FB/TT)"),
+        BotCommand("music", " Download music"),
+        BotCommand("play", " Stream video/audio"),
+        BotCommand("yt", " YouTube search & tools"),
+        BotCommand("spotify", " Spotify control"),
+        BotCommand("thumb", " AI Thumbnail Generator"),
+        BotCommand("facebook", " Facebook control"),
+        BotCommand("twitter", " Twitter/X control"),
+        BotCommand("tiktok", " TikTok control"),
+        BotCommand("whatsapp", " WhatsApp control"),
+        BotCommand("discord", " Send Discord message"),
+        BotCommand("slack", " Send Slack message"),
+        BotCommand("github", " GitHub control"),
+        BotCommand("gmail", " Gmail control"),
+        BotCommand("note", " Notes manager"),
+        BotCommand("remind", " Reminders & tasks"),
+        BotCommand("calendar", " Calendar management"),
+        BotCommand("calc", " Calculator"),
+        BotCommand("translate", " Translate message"),
+        BotCommand("weather", " Weather info"),
         BotCommand("news", " Latest global news"),
-        BotCommand("crypto", " Cryptocurrency prices"),
-        BotCommand("currency", " Currency exchange rates"),
-        
-        # AI Smart Command
-        BotCommand("smart", "?? AI Smart - Natural language command processor"),
+        BotCommand("crypto", " Crypto prices"),
+        BotCommand("currency", " Exchange rates"),
+        BotCommand("time", " World time"),
+        BotCommand("ip", " IP lookup"),
+        BotCommand("phone", " Phone control"),
+        BotCommand("utils", " General utilities"),
+        BotCommand("botprofile", " Manage bot profile")
     ]
     
     await application.bot.set_my_commands(commands)
@@ -208,7 +184,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [" Status", " Files", " Continue"],
         ["🧹 Clear", "🛑 Stop", "🧠 AI Smart"],
         ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        [" Video", " Music", " Play"],
+        ["📥 Video", "🎵 Music", "▶️ Play"],
         [" Chat", " GitHub", " Spotify"],
         [" News", " Crypto", " Currency"],
         [" Gmail", " Notes", " Remind"],
@@ -368,7 +344,7 @@ async def facebook_control(update: Update, action: str = None):
         [" Status", " Files", " Continue"],
         ["🧹 Clear", "🛑 Stop", "🧠 AI Smart"],
         ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        [" Video", " Music", " Play"],
+        ["📥 Video", "🎵 Music", "▶️ Play"],
         [" Chat", " GitHub", " Spotify"],
         [" News", " Crypto", " Currency"],
         [" Gmail", " Notes", " Remind"],
@@ -450,7 +426,7 @@ async def youtube_control(update: Update, action: str = None):
         [" Status", " Files", " Continue"],
         ["🧹 Clear", "🛑 Stop", "🧠 AI Smart"],
         ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        [" Video", " Music", " Play"],
+        ["📥 Video", "🎵 Music", "▶️ Play"],
         [" Chat", " GitHub", " Spotify"],
         [" News", " Crypto", " Currency"],
         [" Gmail", " Notes", " Remind"],
@@ -544,7 +520,7 @@ async def youtube_search(update: Update, query: str):
         [" Status", " Files", " Continue"],
         ["🧹 Clear", "🛑 Stop", "🧠 AI Smart"],
         ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        [" Video", " Music", " Play"],
+        ["📥 Video", "🎵 Music", "▶️ Play"],
         [" Chat", " GitHub", " Spotify"],
         [" News", " Crypto", " Currency"],
         [" Gmail", " Notes", " Remind"],
@@ -614,7 +590,7 @@ async def tiktok_control(update: Update, action: str = None):
         [" Status", " Files", " Continue"],
         ["🧹 Clear", "🛑 Stop", "🧠 AI Smart"],
         ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        [" Video", " Music", " Play"],
+        ["📥 Video", "🎵 Music", "▶️ Play"],
         [" Chat", " GitHub", " Spotify"],
         [" News", " Crypto", " Currency"],
         [" Gmail", " Notes", " Remind"],
@@ -653,7 +629,7 @@ async def phone_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [" Status", " Files", " Continue"],
         ["🧹 Clear", "🛑 Stop", "🧠 AI Smart"],
         ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        [" Video", " Music", " Play"],
+        ["📥 Video", "🎵 Music", "▶️ Play"],
         [" Chat", " GitHub", " Spotify"],
         [" News", " Crypto", " Currency"],
         [" Gmail", " Notes", " Remind"],
@@ -697,7 +673,7 @@ async def language_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [" Status", " Files", " Continue"],
         ["🧹 Clear", "🛑 Stop", "🧠 AI Smart"],
         ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        [" Video", " Music", " Play"],
+        ["📥 Video", "🎵 Music", "▶️ Play"],
         [" Chat", " GitHub", " Spotify"],
         [" News", " Crypto", " Currency"],
         [" Gmail", " Notes", " Remind"],
@@ -1003,7 +979,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [" Status", " Files", " Continue"],
         ["🧹 Clear", "🛑 Stop", "🧠 AI Smart"],
         ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        [" Video", " Music", " Play"],
+        ["📥 Video", "🎵 Music", "▶️ Play"],
         [" Chat", " GitHub", " Spotify"],
         [" News", " Crypto", " Currency"],
         [" Gmail", " Notes", " Remind"],
@@ -5223,7 +5199,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [" Status", " Files", " Continue"],
         ["🧹 Clear", "🛑 Stop", "🧠 AI Smart"],
         ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        [" Video", " Music", " Play"],
+        ["📥 Video", "🎵 Music", "▶️ Play"],
         [" Chat", " GitHub", " Spotify"],
         [" News", " Crypto", " Currency"],
         [" Gmail", " Notes", " Remind"],
