@@ -1376,6 +1376,7 @@ async def github_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "🐙 **Einstein GitHub Architect**\n"
             "━━━━━━━━━━━━━━━━━━━━━\n"
             "Commands:\n"
+            "• `/github connect [token]` - 🔌 **Connect GitHub Account**\n"
             "• `/github website [name]` - 🚀 **Auto-build & Deploy Website**\n"
             "• `/github repos` - 📂 List your repositories\n"
             "• `/github create [name]` - 🆕 Create new repository\n"
@@ -1411,6 +1412,49 @@ async def github_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         # Existing logic using headers
         
+        if action == "connect" and len(context.args) > 1:
+            token = context.args[1]
+            # Validate token
+            test_headers = {
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/vnd.github.v3+json",
+                "X-GitHub-Api-Version": "2022-11-28"
+            }
+            test_resp = requests.get("https://api.github.com/user", headers=test_headers)
+            
+            if test_resp.status_code == 200:
+                user_data = test_resp.json()
+                # Update .env file
+                env_path = "d:/clow bot main/clow bot/Einstein-Bot-/.env"
+                if os.path.exists(env_path):
+                    with open(env_path, 'r') as f:
+                        lines = f.readlines()
+                    
+                    with open(env_path, 'w') as f:
+                        found = False
+                        for line in lines:
+                            if line.startswith("GITHUB_TOKEN="):
+                                f.write(f"GITHUB_TOKEN={token}\n")
+                                found = True
+                            else:
+                                f.write(line)
+                        if not found:
+                            f.write(f"\nGITHUB_TOKEN={token}\n")
+                    
+                    # Reload env
+                    load_dotenv()
+                    await update.message.reply_text(
+                        f"🔌 **GitHub Connected Successfully!**\n"
+                        f"👤 **User:** `{user_data['login']}`\n"
+                        f"✨ *\"Connection is the first step towards universal collaboration.\"*",
+                        parse_mode='HTML'
+                    )
+                else:
+                    await update.message.reply_text("❌ `.env` file not found. Please create one manually.")
+            else:
+                await update.message.reply_text(f"❌ Invalid token or connection error: {test_resp.status_code}")
+            return
+
         if action == "website" and len(context.args) > 1:
             repo_name = context.args[1]
             await update.message.reply_text(f"🚀 **Einstein Web Architect** is designing your site: `{repo_name}`...", parse_mode='HTML')
