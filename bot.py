@@ -125,50 +125,70 @@ def escape_markdown(text: str, version: int = 1) -> str:
 async def setup_commands(application):
     """Set up the bot command menu in Telegram"""
     commands = [
-        BotCommand("start", "🚀 Start the bot"),
-        BotCommand("help", "❓ Show help menu"),
+        # System
         BotCommand("stop", "🛑 Stop all active operations"),
         BotCommand("clear", "🧹 Clear chat messages"),
-        BotCommand("continue", "🔄 Continue pending tasks"),
         BotCommand("files", "📁 List workspace files"),
-        BotCommand("smart", "🧠 AI Smart Command Processor"),
+        
+        # Phone Control
+        BotCommand("phone", "📱 Control phone (flash, volume, etc)"),
+        
+        # Browser & Capture
+        BotCommand("browser", "🌐 Browser control (screenshot, navigate)"),
+        BotCommand("screenshot", "📸 Desktop or web screenshot"),
+        
+        # Search & AI
+        BotCommand("search", "🔍 Real-time web search"),
+        BotCommand("weather", "🌤️ Weather information"),
         BotCommand("ai", "🤖 Chat with OpenAI"),
         BotCommand("ollama", "🦙 Free local AI chat"),
         BotCommand("claude", "🧠 Chat with Claude AI"),
-        BotCommand("search", "🔍 Real-time web search"),
-        BotCommand("wiki", "📖 Search Wikipedia"),
-        BotCommand("video", "📥 Download video (YT/FB/TT)"),
-        BotCommand("music", "🎵 Download music"),
-        BotCommand("play", "▶️ Stream video/audio"),
-        BotCommand("yt", "📺 YouTube search & tools"),
-        BotCommand("spotify", "🎧 Spotify control"),
-        BotCommand("thumb", "🖼️ AI Thumbnail Generator"),
-        BotCommand("facebook", "📘 Facebook control"),
-        BotCommand("twitter", "🐦 Twitter/X control"),
-        BotCommand("tiktok", "🎵 TikTok control"),
-        BotCommand("whatsapp", "💬 WhatsApp control"),
+        BotCommand("smart", "🧠 AI Smart - Natural language command processor"),
+        
+        # Social Media
+        BotCommand("facebook", "📘 Facebook page control"),
+        BotCommand("youtube", "📺 YouTube channel control"),
+        BotCommand("tiktok", "🎵 TikTok account control"),
+        BotCommand("twitter", "🐦 Twitter/X posting"),
+        BotCommand("whatsapp", "💬 WhatsApp Business API"),
+        
+        # Developer Tools
+        BotCommand("github", "🐙 GitHub repository control"),
+        BotCommand("gmail", "📧 Gmail email control"),
         BotCommand("discord", "💬 Send Discord message"),
         BotCommand("slack", "💼 Send Slack message"),
-        BotCommand("github", "🐙 GitHub control"),
-        BotCommand("gmail", "📧 Gmail control"),
-        BotCommand("note", "📝 Notes manager"),
+        
+        # Media
+        BotCommand("spotify", "🎵 Spotify music control"),
+        
+        # Productivity
+        BotCommand("note", "📝 Notes manager (Obsidian-like)"),
         BotCommand("remind", "⏰ Reminders & tasks"),
         BotCommand("calendar", "📅 Calendar management"),
-        BotCommand("calc", "🧮 Calculator"),
-        BotCommand("translate", "🌍 Translate message"),
-        BotCommand("weather", "🌤️ Weather info"),
-        BotCommand("news", "📰 Latest global news"),
-        BotCommand("crypto", "🪙 Crypto prices"),
-        BotCommand("currency", "💱 Exchange rates"),
-        BotCommand("time", "🕒 World time"),
-        BotCommand("ip", "🌐 IP lookup"),
-        BotCommand("phone", "📱 Phone control"),
-        BotCommand("utils", "🛠️ General utilities"),
-        BotCommand("botprofile", "🤖 Manage bot profile")
+        
+        # Travel
+        BotCommand("flight", "✈️ Flight status & check-in"),
+        
+        # File Manager
+        BotCommand("file", "📁 File management"),
+        
+        # Smart Home
+        BotCommand("home", "🏠 Smart home control (Hue)"),
+        
+        # Utilities
+        BotCommand("utils", "🛠️ Utilities (QR, password, news)"),
+        BotCommand("thumb", "🖼️ AI Thumbnail Generator"),
+        BotCommand("botprofile", "🤖 Manage bot profile & photo"),
+        
+        # Language
+        BotCommand("language", "🌍 Change language / भाषा बदलें"),
+        
+        # AI Smart Command
+        BotCommand("smart", "🧠 AI Smart - Natural language command processor"),
     ]
     
     await application.bot.set_my_commands(commands)
-    print("?? Command menu set up successfully!")
+    print("📋 Command menu set up successfully!")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_auth(update): return
@@ -181,16 +201,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await setup_commands(context.application)
     
     keyboard = [
-        ["📊 Status", "📂 Files", "🔄 Continue"],
-        ["🧹 Clear", "🛑 Stop", "🧠 AI Smart"],
-        ["🌤️ Weather", "🔍 Search", "📖 Wiki"],
-        ["📥 Video", "🎵 Music", "▶️ Play"],
-        ["🤖 Chat", "🐙 GitHub", "🎧 Spotify"],
-        ["📰 News", "🪙 Crypto", "💱 Currency"],
-        ["📧 Gmail", "📝 Notes", "⏰ Remind"],
-        ["📱 Phone", "🌐 Browser", "📸 Capture"],
-        ["🏠 Home", "💬 Discord", "🛠️ Utils"],
-        ["📖 Help"]
+        ['📊 Status', '📂 Files', '💻 CMD'],
+        ['🌤️ Weather', '🔍 Search', '👨‍🔬 Einstein'],
+        ['🌐 Browser', '📸 Capture', '🛠️ Utils'],
+        ['📱 Phone', '📍 Share Loc', '📺 Media'],
+        ['🔎 YT Search', '💬 Chat', '🐙 GitHub'],
+        ['📧 Gmail', '📝 Notes', '⏰ Remind'],
+        ['📅 Calendar', '✈️ Travel', '📁 Manager'],
+        ['🏠 SmartHome', '💬 Discord', '🤖 AI Smart'],
+        ['📖 Help']
     ]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     
@@ -216,7 +235,7 @@ async def system_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Visual status bars
     def get_bar(pct):
         filled = int(pct / 10)
-        return '??' * filled + '?' * (10 - filled)
+        return '🟢' * filled + '⚪' * (10 - filled)
 
     status_msg = get_text('system_status', lang, cpu=cpu, ram=ram, disk=disk)
     await update.message.reply_text(status_msg, parse_mode='HTML')
@@ -226,10 +245,10 @@ async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     try:
         files = os.listdir('.')
-        files_str = "\n".join([f"?? {f}" for f in files[:20]]) # Limit to 20 for now
-        await update.message.reply_text(f"?? **Files in current directory:**\n\n{files_str}", parse_mode='HTML')
+        files_str = "\n".join([f"📄 {f}" for f in files[:20]]) # Limit to 20 for now
+        await update.message.reply_text(f"📂 **Files in current directory:**\n\n{files_str}", parse_mode='HTML')
     except Exception as e:
-        await update.message.reply_text(f"? Error: {str(e)}")
+        await update.message.reply_text(f"❌ Error: {str(e)}")
 
 # ============== MULTI-TASK FEATURES ==============
 
@@ -257,45 +276,45 @@ async def get_weather(update: Update, city: str = None):
                 location = data['location']
                 current = data['current']
                 weather_info = (
-                    f"??? **Atmospheric Conditions: {location['name']}**\n"
-                    "?????????????????????\n"
-                    f"??? **Temperature:** `{current['temp_c']}�C`\n"
-                    f"??? **Feels like:** `{current['feelslike_c']}�C`\n"
-                    f"?? **Humidity:** `{current['humidity']}%`\n"
-                    f"??? **Wind Speed:** `{current['wind_kph']} km/h`\n"
-                    f"?? **Condition:** `{current['condition']['text']}`\n\n"
-                    f"????? *\"Look deep into nature, and then you will understand everything better.\"*"
+                    f"🌤️ **Atmospheric Conditions: {location['name']}**\n"
+                    "━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"🌡️ **Temperature:** `{current['temp_c']}°C`\n"
+                    f"🌡️ **Feels like:** `{current['feelslike_c']}°C`\n"
+                    f"💧 **Humidity:** `{current['humidity']}%`\n"
+                    f"🌬️ **Wind Speed:** `{current['wind_kph']} km/h`\n"
+                    f"☁️ **Condition:** `{current['condition']['text']}`\n\n"
+                    f"👨‍🔬 *\"Look deep into nature, and then you will understand everything better.\"*"
                 )
                 await update.message.reply_text(weather_info, parse_mode='HTML')
                 return
             else:
                 error_msg = data.get('error', {}).get('message', 'Unknown error')
-                await update.message.reply_text(f"? **WeatherAPI Error:** `{error_msg}`", parse_mode='HTML')
+                await update.message.reply_text(f"❌ **WeatherAPI Error:** `{error_msg}`", parse_mode='HTML')
                 return
     except Exception as e:
-        await update.message.reply_text(f"? **Meteorological Error:** `{str(e)}`", parse_mode='HTML')
+        await update.message.reply_text(f"❌ **Meteorological Error:** `{str(e)}`", parse_mode='HTML')
         return
     
     # Demo mode if no APIs available
     await update.message.reply_text(
-        f"??? Weather for {city}\n\n"
-        f"??? Temperature: 28�C\n"
-        f"?? Humidity: 65%\n"
-        f"??? Wind: 12 km/h\n"
-        f"?? Condition: Partly Cloudy\n\n"
-        f"?? Demo mode - Add API key to .env for real data:\n"
-        f"� OpenWeatherMap: openweathermap.org\n"
-        f"� WeatherAPI.com: weatherapi.com"
+        f"🌤️ Weather for {city}\n\n"
+        f"🌡️ Temperature: 28°C\n"
+        f"💧 Humidity: 65%\n"
+        f"🌬️ Wind: 12 km/h\n"
+        f"☁️ Condition: Partly Cloudy\n\n"
+        f"⚠️ Demo mode - Add API key to .env for real data:\n"
+        f"• OpenWeatherMap: openweathermap.org\n"
+        f"• WeatherAPI.com: weatherapi.com"
     )
 
 async def search_web(update: Update, query: str = None):
     """Real-time web search using DuckDuckGo"""
     if not query:
-        await update.message.reply_text("?? Web Search\n\nUsage: /search [your query]\nExample: /search latest tech news")
+        await update.message.reply_text("🔍 Web Search\n\nUsage: /search [your query]\nExample: /search latest tech news")
         return
     
     try:
-        await update.message.reply_text(f"?? Searching for: {query}...")
+        await update.message.reply_text(f"🔍 Searching for: {query}...")
         
         # Using DuckDuckGo HTML search (no API key needed)
         headers = {
@@ -311,7 +330,7 @@ async def search_web(update: Update, query: str = None):
             results = soup.find_all('a', class_='result__a', limit=5)
             
             if results:
-                search_results = "?? Search Results:\n\n"
+                search_results = "🔍 Search Results:\n\n"
                 for i, result in enumerate(results, 1):
                     title = result.get_text(strip=True)
                     link = result.get('href', '')
@@ -319,11 +338,11 @@ async def search_web(update: Update, query: str = None):
                 
                 await update.message.reply_text(search_results[:4000])
             else:
-                await update.message.reply_text("? No results found. Try a different query.")
+                await update.message.reply_text("❌ No results found. Try a different query.")
         else:
-            await update.message.reply_text("? Search failed. Please try again.")
+            await update.message.reply_text("❌ Search failed. Please try again.")
     except Exception as e:
-        await update.message.reply_text(f"? Search error: {str(e)}")
+        await update.message.reply_text(f"❌ Search error: {str(e)}")
 
 async def facebook_control(update: Update, action: str = None):
     """Facebook Page control features with Graph API integration"""
@@ -332,21 +351,21 @@ async def facebook_control(update: Update, action: str = None):
 
     if not action:
         keyboard = [
-            [InlineKeyboardButton("?? Page Stats", callback_data='fb_stats')],
-            [InlineKeyboardButton("?? Create Post", callback_data='fb_post_prompt')],
-            [InlineKeyboardButton("?? Upload Photo", callback_data='fb_photo_prompt')],
-            [InlineKeyboardButton("?? Latest Comments", callback_data='fb_comments')],
+            [InlineKeyboardButton("📊 Page Stats", callback_data='fb_stats')],
+            [InlineKeyboardButton("📝 Create Post", callback_data='fb_post_prompt')],
+            [InlineKeyboardButton("📸 Upload Photo", callback_data='fb_photo_prompt')],
+            [InlineKeyboardButton("💬 Latest Comments", callback_data='fb_comments')],
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        status_text = "? **API Connected**" if token and len(token) > 20 else "? **API Not Configured**"
+        status_text = "✅ **API Connected**" if token and len(token) > 20 else "❌ **API Not Configured**"
         
         await update.message.reply_text(
-            "?? **Einstein Facebook Controller**\n"
-            "?????????????????????\n"
-            f"?? **Status:** {status_text}\n"
-            f"?? **Page ID:** `{page_id if page_id else 'Not Set'}`\n\n"
-            "????? *\"Everything is determined, the beginning as well as the end, by forces over which we have no control.\"*\n\n"
+            "📘 **Einstein Facebook Controller**\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            f"📡 **Status:** {status_text}\n"
+            f"🆔 **Page ID:** `{page_id if page_id else 'Not Set'}`\n\n"
+            "👨‍🔬 *\"Everything is determined, the beginning as well as the end, by forces over which we have no control.\"*\n\n"
             "Choose an action from the menu below:",
             reply_markup=reply_markup,
             parse_mode='HTML'
@@ -355,9 +374,9 @@ async def facebook_control(update: Update, action: str = None):
 
     if not token or len(token) < 20:
         await update.message.reply_text(
-            "? **Facebook API Not Configured**\n\n"
+            "❌ **Facebook API Not Configured**\n\n"
             "Please add `FACEBOOK_PAGE_TOKEN` and `FACEBOOK_PAGE_ID` to your `.env` file.\n"
-            "?? *Experiment cannot proceed without proper instrumentation.*",
+            "🔭 *Experiment cannot proceed without proper instrumentation.*",
             parse_mode='HTML'
         )
         return
@@ -372,12 +391,12 @@ async def facebook_control(update: Update, action: str = None):
                 raise Exception(response['error']['message'])
                 
             stats_msg = (
-                f"?? **Facebook Page Statistics: {response.get('name')}**\n"
-                "?????????????????????\n"
-                f"?? **Followers:** `{response.get('followers_count', 0)}` \n"
-                f"?? **Page Likes:** `{response.get('fan_count', 0)}` \n"
-                f"?? **People Talking About:** `{response.get('talking_about_count', 0)}` \n\n"
-                "? *Data synchronized with Graph API.*"
+                f"📊 **Facebook Page Statistics: {response.get('name')}**\n"
+                "━━━━━━━━━━━━━━━━━━━━━\n"
+                f"👥 **Followers:** `{response.get('followers_count', 0)}` \n"
+                f"👍 **Page Likes:** `{response.get('fan_count', 0)}` \n"
+                f"💬 **People Talking About:** `{response.get('talking_about_count', 0)}` \n\n"
+                "✨ *Data synchronized with Graph API.*"
             )
             await update.message.reply_text(stats_msg, parse_mode='HTML')
 
@@ -391,29 +410,29 @@ async def facebook_control(update: Update, action: str = None):
                 raise Exception(response['error']['message'])
                 
             await update.message.reply_text(
-                f"? **Post Published Successfully!**\n"
-                f"?? **Post ID:** `{response.get('id')}`\n\n"
-                "????? *Thought manifest in the social sphere.*",
+                f"✅ **Post Published Successfully!**\n"
+                f"🆔 **Post ID:** `{response.get('id')}`\n\n"
+                "👨‍🔬 *Thought manifest in the social sphere.*",
                 parse_mode='HTML'
             )
             
     except Exception as e:
-        await update.message.reply_text(f"? **Facebook Graph Error:**\n`{str(e)}`", parse_mode='HTML')
+        await update.message.reply_text(f"❌ **Facebook Graph Error:**\n`{str(e)}`", parse_mode='HTML')
 
 async def youtube_control(update: Update, action: str = None):
     """YouTube search, trending, and viral video browser"""
     if not action:
         keyboard = [
-            [InlineKeyboardButton("?? Trending Now", callback_data='yt_trending')],
-            [InlineKeyboardButton("?? Viral Worldwide", callback_data='yt_viral')],
-            [InlineKeyboardButton("?? Search YouTube", callback_data='yt_search_prompt')],
-            [InlineKeyboardButton("?? Video Player Info", callback_data='yt_player_help')],
-            [InlineKeyboardButton("?? Channel Stats", callback_data='yt_stats')],
+            [InlineKeyboardButton("🔥 Trending Now", callback_data='yt_trending')],
+            [InlineKeyboardButton("🌍 Viral Worldwide", callback_data='yt_viral')],
+            [InlineKeyboardButton("🔎 Search YouTube", callback_data='yt_search_prompt')],
+            [InlineKeyboardButton("🎬 Video Player Info", callback_data='yt_player_help')],
+            [InlineKeyboardButton("📊 Channel Stats", callback_data='yt_stats')],
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text(
-            "?? **YouTube Explorer**\n"
-            "???????????????\n"
+            "📺 **YouTube Explorer**\n"
+            "━━━━━━━━━━━━━━━\n"
             "Browse trending videos, search, and more!\n\n"
             "**Commands:**\n"
             "/yt trending - Show trending videos\n"
@@ -428,7 +447,7 @@ async def get_youtube_trending(update: Update, context: ContextTypes.DEFAULT_TYP
     """Fetch trending videos from YouTube"""
     api_key = os.getenv("YOUTUBE_API_KEY")
     if not api_key or "your_youtube_api_key" in api_key:
-        await update.callback_query.message.edit_text("? YouTube API Key missing in .env") if update.callback_query else await update.message.reply_text("? YouTube API Key missing in .env")
+        await update.callback_query.message.edit_text("❌ YouTube API Key missing in .env") if update.callback_query else await update.message.reply_text("❌ YouTube API Key missing in .env")
         return
 
     try:
@@ -437,7 +456,7 @@ async def get_youtube_trending(update: Update, context: ContextTypes.DEFAULT_TYP
         data = response.json()
 
         if 'items' in data:
-            msg = "?? **Trending on YouTube**\n???????????????\n\n"
+            msg = "🔥 **Trending on YouTube**\n━━━━━━━━━━━━━━━\n\n"
             for item in data['items']:
                 title = item['snippet']['title']
                 channel = item['snippet']['channelTitle']
@@ -445,100 +464,99 @@ async def get_youtube_trending(update: Update, context: ContextTypes.DEFAULT_TYP
                 views = item['statistics'].get('viewCount', '0')
                 video_url = f"https://youtu.be/{video_id}"
                 
-                msg += f"?? **{title[:50]}...**\n"
-                msg += f"?? {channel} | ??? {int(views):,} views\n"
-                msg += f"?? [Watch Now]({video_url})\n\n"
+                msg += f"🎬 **{title[:50]}...**\n"
+                msg += f"👤 {channel} | 👁️ {int(views):,} views\n"
+                msg += f"🔗 [Watch Now]({video_url})\n\n"
             
             if update.callback_query:
                 await update.callback_query.message.edit_text(msg, parse_mode='HTML', disable_web_page_preview=False)
             else:
                 await update.message.reply_text(msg, parse_mode='HTML')
         else:
-            await update.message.reply_text("? Could not fetch trending videos.")
+            await update.message.reply_text("❌ Could not fetch trending videos.")
     except Exception as e:
-        await update.message.reply_text(f"? YouTube Error: {str(e)}")
+        await update.message.reply_text(f"❌ YouTube Error: {str(e)}")
 
 async def youtube_search(update: Update, query: str):
-    """Search for videos on YouTube with interactive play buttons"""
-    api_key = os.getenv("YOUTUBE_API_KEY")
-    if not api_key or api_key == "your_youtube_api_key_here" or len(api_key) < 20:
-        await update.message.reply_text("? YouTube API Key missing or invalid. Please check .env file.")
-        return
-
+    """Search for videos on YouTube using yt-dlp (no API key required)"""
     try:
-        await update.message.reply_text(f"?? Searching for: {query}...")
+        # Search using yt-dlp to avoid API key limitations
+        ydl_opts = {
+            'format': 'best',
+            'quiet': True,
+            'no_warnings': True,
+            'extract_flat': False, # Changed to False to get more metadata if available
+            'n_playlist_items': 5,
+            'skip_download': True,
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
+        }
         
-        url = f"https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=5&q={requests.utils.quote(query)}&type=video&key={api_key}"
-        response = requests.get(url, timeout=15)
-        data = response.json()
+        status_msg = await update.message.reply_text(f"🔍 **Einstein OS:** `Searching YouTube for: {query}...` 🧪", parse_mode='HTML')
         
-        if response.status_code != 200:
-            error_msg = data.get('error', {}).get('message', 'Unknown error')
-            await update.message.reply_text(f"? YouTube API Error: {error_msg}")
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            search_results = await asyncio.get_event_loop().run_in_executor(
+                None, lambda: ydl.extract_info(f"ytsearch5:{query}", download=False)
+            )
+            
+        if not search_results or 'entries' not in search_results or not search_results['entries']:
+            await status_msg.edit_text("❌ `No results found in the YouTube archives.`")
             return
 
-        if 'items' in data and len(data['items']) > 0:
-            await update.message.reply_text(f"?? **Top 5 Results for:** `{query}`", parse_mode='HTML')
+        await status_msg.delete()
+        
+        for entry in search_results['entries']:
+            if not entry: continue
             
-            for item in data['items']:
-                title = item['snippet']['title']
-                video_id = item['id']['videoId']
-                video_url = f"https://www.youtube.com/watch?v={video_id}"
-                channel = item['snippet']['channelTitle']
-                thumbnail_url = item['snippet']['thumbnails']['high']['url']
-                
-                keyboard = [
-                    [
-                        InlineKeyboardButton("?? Play Audio", callback_data=f"dl_audio_{video_id}"),
-                        InlineKeyboardButton("?? Play Video", callback_data=f"dl_video_{video_id}")
-                    ],
-                    [
-                        InlineKeyboardButton("?? Open YouTube", url=video_url)
-                    ]
+            title = entry.get('title', 'Unknown Title')
+            video_id = entry.get('id')
+            video_url = f"https://www.youtube.com/watch?v={video_id}"
+            channel = entry.get('uploader', 'Unknown Channel')
+            duration = entry.get('duration_string', 'N/A')
+            
+            keyboard = [
+                [
+                    InlineKeyboardButton("🎵 Play Audio", callback_data=f"dl_audio_{video_id}"),
+                    InlineKeyboardButton("🎬 Play Video", callback_data=f"dl_video_{video_id}")
+                ],
+                [
+                    InlineKeyboardButton("📺 Open YouTube", url=video_url)
                 ]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-                
-                # Format message with HTML
-                caption = (
-                    f"?? <b>{escape_html(title)}</b>\n"
-                    f"?? <b>Channel:</b> {escape_html(channel)}\n"
-                    f"?? <a href='{video_url}'>Watch on YouTube</a>"
-                )
-                
-                try:
-                    await update.message.reply_photo(
-                        photo=thumbnail_url,
-                        caption=caption,
-                        reply_markup=reply_markup,
-                        parse_mode='HTML'
-                    )
-                except Exception as e:
-                    # Fallback if thumbnail fails
-                    await update.message.reply_text(
-                        caption,
-                        reply_markup=reply_markup,
-                        parse_mode='HTML',
-                        disable_web_page_preview=False
-                    )
-        else:
-            await update.message.reply_text("? No videos found for this query.")
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            caption = (
+                f"🎬 **{escape_html(title)}**\n"
+                f"━━━━━━━━━━━━━━━━━━━━━\n"
+                f"👤 **Channel:** `{escape_html(channel)}`\n"
+                f"⏱ **Duration:** `{duration}`\n"
+                f"🔗 <a href='{video_url}'>Watch on YouTube</a>"
+            )
+            
+            thumb = entry.get('thumbnail')
+            
+            try:
+                if thumb:
+                    await update.message.reply_photo(photo=thumb, caption=caption, reply_markup=reply_markup, parse_mode='HTML')
+                else:
+                    await update.message.reply_text(caption, reply_markup=reply_markup, parse_mode='HTML', disable_web_page_preview=False)
+            except Exception:
+                await update.message.reply_text(caption, reply_markup=reply_markup, parse_mode='HTML', disable_web_page_preview=False)
+            
     except Exception as e:
-        await update.message.reply_text(f"? Search Error: {str(e)}")
         import traceback
         print(f"YouTube search error: {traceback.format_exc()}")
+        error_msg = f"❌ `Search Error: {str(e)[:100]}`"
+        if 'status_msg' in locals():
+            await status_msg.edit_text(error_msg)
+        else:
+            await update.message.reply_text(error_msg)
 
 async def youtube_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle /yt command - search YouTube and show results with play buttons"""
+    """Handle /yt command - Search YouTube without requiring an API key"""
     try:
-        # Check if API key exists
-        api_key = os.getenv("YOUTUBE_API_KEY")
-        if not api_key or api_key == "your_youtube_api_key_here" or len(api_key) < 20:
-            await youtube_control(update, None)
-            return
-
         if not context.args:
-            await update.message.reply_text("?? **YouTube Search**\n\nUsage: `/yt [search query]`\nExample: `/yt lofi hip hop` or click the button below.", parse_mode='HTML')
-            await youtube_control(update, None)
+            await update.message.reply_text("📺 **Einstein YouTube Search**\n━━━━━━━━━━━━━━━━━━━━━\nUsage: `/yt [search query]`\nExample: `/yt lofi hip hop`", parse_mode='HTML')
             return
 
         query = " ".join(context.args)
@@ -551,28 +569,28 @@ async def tiktok_control(update: Update, action: str = None):
     """TikTok account control features"""
     if not action:
         keyboard = [
-            [InlineKeyboardButton("?? Account Stats", callback_data='tt_stats')],
-            [InlineKeyboardButton("?? Upload Video", callback_data='tt_upload')],
-            [InlineKeyboardButton("?? Comments", callback_data='tt_comments')],
+            [InlineKeyboardButton("📊 Account Stats", callback_data='tt_stats')],
+            [InlineKeyboardButton("🎵 Upload Video", callback_data='tt_upload')],
+            [InlineKeyboardButton("💬 Comments", callback_data='tt_comments')],
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text(
-            "?? TikTok Control\n\n"
+            "🎵 TikTok Control\n\n"
             "Choose an action:",
             reply_markup=reply_markup
         )
         return
     
     await update.message.reply_text(
-        "?? TikTok Control\n\n"
-        "?? Setup Required:\n"
+        "🎵 TikTok Control\n\n"
+        "⚠️ Setup Required:\n"
         "1. TikTok Business Account\n"
         "2. Add API credentials to .env\n\n"
         "Features available:\n"
-        "� ?? Account analytics\n"
-        "� ?? Video upload\n"
-        "� ?? Comment management\n"
-        "� ?? Trending sounds"
+        "• 📊 Account analytics\n"
+        "• 🎵 Video upload\n"
+        "• 💬 Comment management\n"
+        "• 📈 Trending sounds"
     )
 
 async def phone_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -581,33 +599,33 @@ async def phone_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     keyboard = [
         [
-            InlineKeyboardButton("?? Flash ON", callback_data='phone_flash_on'),
-            InlineKeyboardButton("?? Flash OFF", callback_data='phone_flash_off')
+            InlineKeyboardButton("🔦 Flash ON", callback_data='phone_flash_on'),
+            InlineKeyboardButton("🔦 Flash OFF", callback_data='phone_flash_off')
         ],
         [
-            InlineKeyboardButton("?? Max Volume", callback_data='phone_vol_max'),
-            InlineKeyboardButton("?? Mute", callback_data='phone_vol_mute')
+            InlineKeyboardButton("🔊 Max Volume", callback_data='phone_vol_max'),
+            InlineKeyboardButton("🔇 Mute", callback_data='phone_vol_mute')
         ],
         [
-            InlineKeyboardButton("?? Play Siren", callback_data='phone_siren'),
-            InlineKeyboardButton("?? Stop All", callback_data='phone_stop')
+            InlineKeyboardButton("🎵 Play Siren", callback_data='phone_siren'),
+            InlineKeyboardButton("⏹️ Stop All", callback_data='phone_stop')
         ],
         [
-            InlineKeyboardButton("?? Live Location", callback_data='phone_location'),
-            InlineKeyboardButton("?? Battery Status", callback_data='phone_battery')
+            InlineKeyboardButton("📍 Live Location", callback_data='phone_location'),
+            InlineKeyboardButton("🔋 Battery Status", callback_data='phone_battery')
         ],
         [
-            InlineKeyboardButton("?? Settings", callback_data='phone_settings'),
-            InlineKeyboardButton("?? Front Cam", callback_data='phone_cam_front')
+            InlineKeyboardButton("⚙️ Settings", callback_data='phone_settings'),
+            InlineKeyboardButton("📸 Front Cam", callback_data='phone_cam_front')
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await update.message.reply_text(
-        "?? **Einstein Phone Controller**\n"
-        "?????????????????????\n"
+        "📱 **Einstein Phone Controller**\n"
+        "━━━━━━━━━━━━━━━━━━━━━\n"
         "Select a command to control the device:\n\n"
-        "????? *\"Everything is determined by forces over which we have no control.\"*",
+        "👨‍🔬 *\"Everything is determined by forces over which we have no control.\"*",
         reply_markup=reply_markup,
         parse_mode='HTML'
     )
@@ -617,21 +635,21 @@ async def language_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
         # Show language selection menu
         keyboard = [
-            [InlineKeyboardButton("???? English", callback_data='lang_en')],
-            [InlineKeyboardButton("???? ????? (Bengali)", callback_data='lang_bn')],
-            [InlineKeyboardButton("???? ?????? (Hindi)", callback_data='lang_hi')],
-            [InlineKeyboardButton("???? Espa�ol (Spanish)", callback_data='lang_es')],
-            [InlineKeyboardButton("???? ??????? (Arabic)", callback_data='lang_ar')],
-            [InlineKeyboardButton("???? ?? (Chinese)", callback_data='lang_zh')],
+            [InlineKeyboardButton("🇬🇧 English", callback_data='lang_en')],
+            [InlineKeyboardButton("🇧🇩 বাংলা (Bengali)", callback_data='lang_bn')],
+            [InlineKeyboardButton("🇮🇳 हिन्दी (Hindi)", callback_data='lang_hi')],
+            [InlineKeyboardButton("🇪🇸 Español (Spanish)", callback_data='lang_es')],
+            [InlineKeyboardButton("🇸🇦 العربية (Arabic)", callback_data='lang_ar')],
+            [InlineKeyboardButton("🇨🇳 中文 (Chinese)", callback_data='lang_zh')],
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await update.message.reply_text(
-            "?? **Select Your Language / ????? ???? ???????? ???? / ???? ???? ?????**\n\n"
+            "🌍 **Select Your Language / আপনার ভাষা নির্বাচন করুন / अपनी भाषा चुनें**\n\n"
             "Choose your preferred language for the bot interface:\n"
-            "?? ??????????? ???? ????? ??????? ???? ???? ???:\n"
-            "??? ??????? ?? ??? ???? ??????? ???? ?????:\n\n"
-            "Current / ??????? / ???????: ?????????????? English",
+            "বট ইন্টারফেসের জন্য আপনার পছন্দের ভাষা বেছে নিন:\n"
+            "बॉट इंटरफेस के लिए अपनी पसंदीदा भाषा चुनें:\n\n"
+            "Current / বর্তমান / वर्तमान: 🏴󠁧󠁢󠁥󠁮󠁧󠁿 English",
             reply_markup=reply_markup,
             parse_mode='HTML'
         )
@@ -643,30 +661,30 @@ async def language_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if lang in supported_langs:
         # Store user language preference (in a real app, store in database)
         lang_names = {
-            'en': '???? English',
-            'bn': '???? ?????',
-            'hi': '???? ??????',
-            'es': '???? Espa�ol',
-            'ar': '???? ???????',
-            'zh': '???? ??'
+            'en': '🇬🇧 English',
+            'bn': '🇧🇩 বাংলা',
+            'hi': '🇮🇳 हिन्दी',
+            'es': '🇪🇸 Español',
+            'ar': '🇸🇦 العربية',
+            'zh': '🇨🇳 中文'
         }
         
         welcome_msg = get_text('welcome', lang, web_port=f"http://127.0.0.1:{WEB_PORT}")
         
         await update.message.reply_text(
-            f"? Language set to: {lang_names[lang]}\n\n"
+            f"✅ Language set to: {lang_names[lang]}\n\n"
             f"{welcome_msg}"
         )
     else:
         await update.message.reply_text(
-            "?? Unsupported language!\n\n"
+            "⚠️ Unsupported language!\n\n"
             "Supported languages:\n"
-            "???? en - English\n"
-            "???? bn - Bengali\n"
-            "???? hi - Hindi\n"
-            "???? es - Spanish\n"
-            "???? ar - Arabic\n"
-            "???? zh - Chinese\n\n"
+            "🇬🇧 en - English\n"
+            "🇧🇩 bn - Bengali\n"
+            "🇮🇳 hi - Hindi\n"
+            "🇪🇸 es - Spanish\n"
+            "🇸🇦 ar - Arabic\n"
+            "🇨🇳 zh - Chinese\n\n"
             "Usage: /language [code]\n"
             "Example: /language bn"
         )
@@ -683,7 +701,7 @@ async def tunnel_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if command == "start":
         # Check if same target is already running
         if cf_tunnel_process and cf_tunnel_url and cf_tunnel_url != "None":
-            await update.message.reply_text(f"? **Tunnel already live!**\n?? {cf_tunnel_url}", parse_mode='HTML')
+            await update.message.reply_text(f"✅ **Tunnel already live!**\n🔗 {cf_tunnel_url}", parse_mode='HTML')
             return
 
         if cf_tunnel_process:
@@ -707,7 +725,7 @@ async def tunnel_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             
             # Instant acknowledgement
-            await update.message.reply_text(f"?? **Einstein is calculating the secure path...** ??", parse_mode='HTML')
+            await update.message.reply_text(f"🚀 **Einstein is calculating the secure path...** 🧪", parse_mode='HTML')
             
             def track_url(process, chat_id, target, bot_instance, loop_instance):
                 global cf_tunnel_url
@@ -730,7 +748,7 @@ async def tunnel_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                     lambda: loop_instance.create_task(
                                         bot_instance.send_message(
                                             chat_id=chat_id, 
-                                            text=f"? **Tunnel Live!**\n?? {cf_tunnel_url}",
+                                            text=f"✅ **Tunnel Live!**\n🔗 {cf_tunnel_url}",
                                             parse_mode='HTML'
                                         )
                                     )
@@ -750,26 +768,26 @@ async def tunnel_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ).start()
             
         except Exception as e:
-            await update.message.reply_text(f"? **Error:** `{str(e)}`", parse_mode='HTML')
+            await update.message.reply_text(f"❌ **Error:** `{str(e)}`", parse_mode='HTML')
             
     elif command == "stop":
         if cf_tunnel_process:
             cf_tunnel_process.terminate()
             cf_tunnel_process = None
             cf_tunnel_url = None
-            await update.message.reply_text("?? **Cloudflare Tunnel Stopped.**", parse_mode='HTML')
+            await update.message.reply_text("🛑 **Cloudflare Tunnel Stopped.**", parse_mode='HTML')
         else:
-            await update.message.reply_text("?? **No tunnel is currently running.**", parse_mode='HTML')
+            await update.message.reply_text("⚠️ **No tunnel is currently running.**", parse_mode='HTML')
             
     else: # Status
-        status = "?? Running" if cf_tunnel_process else "?? Offline"
+        status = "🟢 Running" if cf_tunnel_process else "🔴 Offline"
         url = cf_tunnel_url if cf_tunnel_url else "None"
         await update.message.reply_text(
-            f"?? **Cloudflare Tunnel Status**\n"
-            f"?????????????????????\n"
-            f"?? **Status:** {status}\n"
-            f"?? **URL:** `{url}`\n\n"
-            f"?? *Use `/tunnel start` or `/tunnel stop` to control.*",
+            f"☁️ **Cloudflare Tunnel Status**\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n"
+            f"📊 **Status:** {status}\n"
+            f"🌐 **URL:** `{url}`\n\n"
+            f"💡 *Use `/tunnel start` or `/tunnel stop` to control.*",
             parse_mode='HTML'
         )
 
@@ -793,38 +811,38 @@ async def stop_all_actions(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             cf_tunnel_process = None
             cf_tunnel_url = None
-            results.append("?? Cloudflare Tunnel Terminated")
+            results.append("🛑 Cloudflare Tunnel Terminated")
         except Exception as e:
             add_to_logs(f"Stop Error (Tunnel): {e}")
-            results.append("?? Tunnel stop failed (Force killed instead)")
+            results.append("⚠️ Tunnel stop failed (Force killed instead)")
         
     # 2. Stop Location Sharing
     if share_location_active:
         share_location_active.clear()
-        results.append("?? All Location Sharing Stopped")
+        results.append("📍 All Location Sharing Stopped")
         
     # 3. Stop Remote Phone Actions (Queue stop for all clients)
     for user_id in remote_clients:
         remote_clients[user_id]["pending_commands"] = ["stop"]
-    results.append("?? Emergency Stop sent to all Remote Devices")
+    results.append("📱 Emergency Stop sent to all Remote Devices")
     
     # 4. Local stop (if running on Termux)
     if os.name != 'nt':
         try:
             subprocess.run(["termux-flashlight", "off"], capture_output=True)
             subprocess.run(["termux-volume", "music", "0"], capture_output=True)
-            results.append("? Local hardware neutralized")
+            results.append("⚡ Local hardware neutralized")
         except: pass
 
     if not results:
-        await update.message.reply_text("? **System is already idle.**", parse_mode='HTML')
+        await update.message.reply_text("✨ **System is already idle.**", parse_mode='HTML')
     else:
-        status_text = "\n".join([f"� {r}" for r in results])
+        status_text = "\n".join([f"• {r}" for r in results])
         await update.message.reply_text(
-            f"?? **System-Wide Emergency Stop**\n"
-            f"?????????????????????\n"
+            f"⚖️ **System-Wide Emergency Stop**\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n"
             f"{status_text}\n\n"
-            f"? *All processes have been forced to stop.*",
+            f"✨ *All processes have been forced to stop.*",
             parse_mode='HTML'
         )
 
@@ -841,7 +859,7 @@ async def clear_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if context.args and context.args[0].isdigit():
             amount = min(int(context.args[0]), 100)
         
-        status_msg = await update.message.reply_text(f"?? **Cleaning up {amount} messages...**", parse_mode='HTML')
+        status_msg = await update.message.reply_text(f"🧹 **Cleaning up {amount} messages...**", parse_mode='HTML')
         
         deleted_count = 0
         # Attempt to delete messages one by one
@@ -855,7 +873,7 @@ async def clear_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Send a self-destructing confirmation
         final_msg = await context.bot.send_message(
             chat_id=chat_id, 
-            text=f"? **Cleaned {deleted_count} messages!**", 
+            text=f"✅ **Cleaned {deleted_count} messages!**", 
             parse_mode='HTML'
         )
         import asyncio
@@ -863,7 +881,7 @@ async def clear_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await final_msg.delete()
         
     except Exception as e:
-        await update.message.reply_text(f"? **Clear Error:** `{str(e)}`", parse_mode='HTML')
+        await update.message.reply_text(f"❌ **Clear Error:** `{str(e)}`", parse_mode='HTML')
 
 async def list_workspace_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """List all files in the current workspace"""
@@ -875,55 +893,131 @@ async def list_workspace_files(update: Update, context: ContextTypes.DEFAULT_TYP
         for f in files:
             size = os.path.getsize(f)
             if os.path.isdir(f):
-                file_list.append(f"?? <b>{f}/</b>")
+                file_list.append(f"📁 <b>{f}/</b>")
             else:
                 kb_size = size / 1024
-                file_list.append(f"?? {f} (<i>{kb_size:.1f} KB</i>)")
+                file_list.append(f"📄 {f} (<i>{kb_size:.1f} KB</i>)")
         
-        response = "?? <b>Workspace Files:</b>\n" + "?????????????????????\n" + "\n".join(file_list)
+        response = "📂 <b>Workspace Files:</b>\n" + "━━━━━━━━━━━━━━━━━━━━━\n" + "\n".join(file_list)
         await update.message.reply_text(response, parse_mode='HTML')
     except Exception as e:
-        await update.message.reply_text(f"? Error listing files: {str(e)}")
+        await update.message.reply_text(f"❌ Error listing files: {str(e)}")
 
 async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Show available commands and bot capabilities"""
     help_text = (
-        "?? <b>Einstein OS - Command Lab</b>\n"
-        "?????????????????????\n"
-        "<b>?? Core Commands:</b>\n"
-        "� /start - Wake up Einstein\n"
-        "� /help - Show this manual\n"
-        "� /stop - Emergency System Stop\n\n"
-        "<b>?? Networking:</b>\n"
-        "� /tunnel [start/stop/status] [url] - HTTPS Tunneling\n\n"
-        "<b>?? Data & Files:</b>\n"
-        "� /files - List workspace contents\n"
-        "� Send any URL - Instant Video/Media Download\n\n"
-        "<b>?? Phone Control:</b>\n"
-        "� /phone - Remote Device Dashboard\n"
-        "� /location - Share Live GPS\n\n"
-        "<b>?? Intelligence:</b>\n"
-        "� Just chat - Einstein AI Thinking\n"
-        "� /image [prompt] - Generate AI Art\n"
-        "?????????????????????\n"
-        "?? @alberteinstein247_bot"
+        "🧠 <b>Einstein OS - Command Lab</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━━\n"
+        "<b>🚀 Core Commands:</b>\n"
+        "• /start - Wake up Einstein\n"
+        "• /help - Show this manual\n"
+        "• /stop - Emergency System Stop\n\n"
+        "<b>☁️ Networking:</b>\n"
+        "• /tunnel [start/stop/status] [url] - HTTPS Tunneling\n\n"
+        "<b>📁 Data & Files:</b>\n"
+        "• /files - List workspace contents\n"
+        "• Send any URL - Instant Video/Media Download\n\n"
+        "<b>📱 Phone Control:</b>\n"
+        "• /phone - Remote Device Dashboard\n"
+        "• /location - Share Live GPS\n\n"
+        "<b>🧬 Intelligence:</b>\n"
+        "• Just chat - Einstein AI Thinking\n"
+        "• /image [prompt] - Generate AI Art\n"
+        "━━━━━━━━━━━━━━━━━━━━━\n"
+        "📥 @alberteinstein247_bot"
     )
     await update.message.reply_text(help_text, parse_mode='HTML')
+
+async def get_system_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Get detailed system information (CPU, RAM, Disk, OS)"""
+    if not await check_auth(update): return
+    
+    try:
+        import psutil
+        import platform
+        from datetime import datetime
+        
+        # CPU Info
+        cpu_usage = psutil.cpu_percent(interval=1)
+        cpu_count = psutil.cpu_count()
+        
+        # Memory Info
+        mem = psutil.virtual_memory()
+        mem_total = mem.total / (1024**3)
+        mem_used = mem.used / (1024**3)
+        mem_percent = mem.percent
+        
+        # Disk Info
+        disk = psutil.disk_usage('/')
+        disk_total = disk.total / (1024**3)
+        disk_used = disk.used / (1024**3)
+        disk_percent = disk.percent
+        
+        # OS Info
+        os_info = f"{platform.system()} {platform.release()}"
+        boot_time = datetime.fromtimestamp(psutil.boot_time()).strftime("%Y-%m-%d %H:%M:%S")
+        
+        info_msg = (
+            f"🖥️ **Einstein System Diagnostics**\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n"
+            f"💻 **OS:** `{os_info}`\n"
+            f"⏱ **Uptime Since:** `{boot_time}`\n\n"
+            f"🧠 **CPU Usage:** `{cpu_usage}%` ({cpu_count} Cores)\n"
+            f"📟 **RAM:** `{mem_used:.2f}GB` / `{mem_total:.2f}GB` ({mem_percent}%)\n"
+            f"💾 **Disk:** `{disk_used:.2f}GB` / `{disk_total:.2f}GB` ({disk_percent}%)\n\n"
+            f"👨‍🔬 *\"Everything should be made as simple as possible, but not simpler.\"*"
+        )
+        
+        await update.message.reply_text(info_msg, parse_mode='HTML')
+    except Exception as e:
+        await update.message.reply_text(f"❌ **Diagnostics Error:** `{str(e)}`", parse_mode='HTML')
+
+async def take_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Take a screenshot of the host machine (Windows/Linux/Mac)"""
+    if not await check_auth(update): return
+    
+    status_msg = await update.message.reply_text("📸 `Einstein is capturing the visual spectrum...` 🧪", parse_mode='HTML')
+    
+    try:
+        from PIL import ImageGrab
+        import os
+        
+        # Capture screen
+        screenshot = ImageGrab.grab()
+        screenshot_path = "d:/clow bot/downloads/screenshot.png"
+        os.makedirs("d:/clow bot/downloads", exist_ok=True)
+        screenshot.save(screenshot_path)
+        
+        with open(screenshot_path, 'rb') as f:
+            await update.message.reply_photo(
+                photo=f, 
+                caption="📸 **System Screenshot Captured**\n━━━━━━━━━━━━━━━━━━━━━\n👨‍🔬 *\"The only thing that interferes with my learning is my education.\"*",
+                parse_mode='HTML'
+            )
+        
+        # Cleanup
+        os.remove(screenshot_path)
+        await status_msg.delete()
+    except Exception as e:
+        if 'status_msg' in locals():
+            await status_msg.edit_text(f"❌ **Capture Error:** `{str(e)}`", parse_mode='HTML')
+        else:
+            await update.message.reply_text(f"❌ **Capture Error:** `{str(e)}`", parse_mode='HTML')
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Wake up Einstein and show the custom command keyboard"""
     keyboard = [
-        [InlineKeyboardButton("?? Status", callback_id="status"), InlineKeyboardButton("?? Files", callback_data="files"), InlineKeyboardButton("?? CMD", callback_id="cmd")],
-        [InlineKeyboardButton("??? Weather", callback_id="weather"), InlineKeyboardButton("?? Search", callback_id="search"), InlineKeyboardButton("????? Einstein", callback_id="ai")],
-        [InlineKeyboardButton("?? Browser", callback_id="browser"), InlineKeyboardButton("?? Capture", callback_id="capture"), InlineKeyboardButton("??? Utils", callback_id="utils")],
-        [InlineKeyboardButton("?? Social", callback_id="social"), InlineKeyboardButton("?? Media", callback_id="media"), InlineKeyboardButton("?? YT Search", callback_id="yt")],
-        [InlineKeyboardButton("?? Tunnel", callback_data="tunnel_menu"), InlineKeyboardButton("?? STOP", callback_data="stop_all")]
+        [InlineKeyboardButton("📊 Status", callback_id="status"), InlineKeyboardButton("📂 Files", callback_data="files"), InlineKeyboardButton("💻 CMD", callback_id="cmd")],
+        [InlineKeyboardButton("🌤️ Weather", callback_id="weather"), InlineKeyboardButton("🔍 Search", callback_id="search"), InlineKeyboardButton("👨‍🔬 Einstein", callback_id="ai")],
+        [InlineKeyboardButton("🌐 Browser", callback_id="browser"), InlineKeyboardButton("📸 Capture", callback_id="capture"), InlineKeyboardButton("🛠️ Utils", callback_id="utils")],
+        [InlineKeyboardButton("📱 Social", callback_id="social"), InlineKeyboardButton("📺 Media", callback_id="media"), InlineKeyboardButton("🔎 YT Search", callback_id="yt")],
+        [InlineKeyboardButton("☁️ Tunnel", callback_data="tunnel_menu"), InlineKeyboardButton("🛑 STOP", callback_data="stop_all")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await update.message.reply_text(
-        "?? <b>Einstein OS - Ready for Input</b>\n"
-        "?????????????????????\n"
+        "🧠 <b>Einstein OS - Ready for Input</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━━\n"
         "Welcome to the laboratory. Select a module below or use /help for all commands.",
         reply_markup=reply_markup,
         parse_mode='HTML'
@@ -940,9 +1034,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await list_workspace_files(update, context)
     elif data == "tunnel_menu":
         await update.effective_message.reply_text(
-            "?? <b>Tunnel Control</b>\n"
-            "� <code>/tunnel start</code> - Start default tunnel\n"
-            "� <code>/tunnel stop</code> - Close tunnel",
+            "☁️ <b>Tunnel Control</b>\n"
+            "• <code>/tunnel start</code> - Start default tunnel\n"
+            "• <code>/tunnel stop</code> - Close tunnel",
             parse_mode='HTML'
         )
     elif data == "stop_all":
@@ -966,10 +1060,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await get_youtube_trending(update) # Reuse for now
         return
     elif data == 'yt_search_prompt':
-        await query.message.reply_text("?? Send me your search query using `/yt [your search]`\nExample: `/yt Atif Aslam`")
+        await query.message.reply_text("🔎 Send me your search query using `/yt [your search]`\nExample: `/yt Atif Aslam`")
         return
     elif data == 'yt_player_help':
-        await query.message.reply_text("?? **Video Player**\n\nSimply paste a YouTube link or use `/video [URL]` to play and download any video!")
+        await query.message.reply_text("🎬 **Video Player**\n\nSimply paste a YouTube link or use `/video [URL]` to play and download any video!")
         return
     elif data == 'yt_stats':
         await youtube_control(update.callback_query, action="stats")
@@ -980,10 +1074,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await facebook_control(mock_update_from_query(query), action="stats")
         return
     elif data == 'fb_post_prompt':
-        await query.message.reply_text("?? To create a post, use: `/fb_post [your message]`")
+        await query.message.reply_text("📝 To create a post, use: `/fb_post [your message]`")
         return
     elif data == 'fb_comments':
-        await query.message.reply_text("?? This feature is being calibrated with the Graph API.")
+        await query.message.reply_text("💬 This feature is being calibrated with the Graph API.")
         return
 
     elif data.startswith('dl_audio_'):
@@ -992,7 +1086,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             video_url = f"https://www.youtube.com/watch?v={video_id}"
             
             # Send a message to show we're processing
-            await query.message.reply_text("?? Downloading audio... Please wait")
+            await query.message.reply_text("🎵 Downloading audio... Please wait")
             
             # Create MockUpdate to simulate Update object
             class MockUpdate:
@@ -1017,7 +1111,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             import traceback
             error_msg = f"Audio error: {str(e)}\n{traceback.format_exc()[:500]}"
             print(error_msg)
-            await query.message.reply_text(f"? Error playing audio: {str(e)[:200]}")
+            await query.message.reply_text(f"❌ Error playing audio: {str(e)[:200]}")
         return
     elif data.startswith('dl_video_'):
         try:
@@ -1025,7 +1119,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             video_url = f"https://www.youtube.com/watch?v={video_id}"
             
             # Send a message to show we're processing
-            await query.message.reply_text("?? Downloading video... Please wait")
+            await query.message.reply_text("🎥 Downloading video... Please wait")
             
             # Create MockUpdate to simulate Update object
             class MockUpdate:
@@ -1050,24 +1144,24 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             import traceback
             error_msg = f"Video error: {str(e)}\n{traceback.format_exc()[:500]}"
             print(error_msg)
-            await query.message.reply_text(f"? Error playing video: {str(e)[:200]}")
+            await query.message.reply_text(f"❌ Error playing video: {str(e)[:200]}")
         return
     
     if data.startswith('lang_'):
         lang = data.split('_')[1]
         lang_names = {
-            'en': '???? English',
-            'bn': '???? ?????',
-            'hi': '???? ??????',
-            'es': '???? Espa�ol',
-            'ar': '???? ???????',
-            'zh': '???? ??'
+            'en': '🇬🇧 English',
+            'bn': '🇧🇩 বাংলা',
+            'hi': '🇮🇳 हिन्दी',
+            'es': '🇪🇸 Español',
+            'ar': '🇸🇦 العربية',
+            'zh': '🇨🇳 中文'
         }
         
         welcome_msg = get_text('welcome', lang, web_port=f"http://127.0.0.1:{WEB_PORT}")
         
         await query.edit_message_text(
-            f"? Language changed to: {lang_names[lang]}\n\n"
+            f"✅ Language changed to: {lang_names[lang]}\n\n"
             f"{welcome_msg}"
         )
         return
@@ -1095,31 +1189,31 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Fallback: Try to execute locally if bot is running on the device itself
         try:
             if action == "flash_on":
-                status_text = "?? Command sent: Turn Flash ON"
+                status_text = "🔦 Command sent: Turn Flash ON"
                 if os.name != 'nt': # Android/Termux
                     subprocess.run(["termux-flashlight", "on"], check=True)
-                    command_result = "? Flash turned ON (Local)"
+                    command_result = "✅ Flash turned ON (Local)"
             elif action == "flash_off":
-                status_text = "?? Command sent: Turn Flash OFF"
+                status_text = "🔦 Command sent: Turn Flash OFF"
                 if os.name != 'nt':
                     subprocess.run(["termux-flashlight", "off"], check=True)
-                    command_result = "? Flash turned OFF (Local)"
+                    command_result = "✅ Flash turned OFF (Local)"
             elif action == "vol_max":
-                status_text = "?? Command sent: Set Volume to MAX"
+                status_text = "🔊 Command sent: Set Volume to MAX"
                 if os.name != 'nt':
                     subprocess.run(["termux-volume", "music", "15"], check=True)
-                    command_result = "? Volume set to MAX (Local)"
+                    command_result = "✅ Volume set to MAX (Local)"
             elif action == "vol_mute":
-                status_text = "?? Command sent: Mute Device"
+                status_text = "🔇 Command sent: Mute Device"
                 if os.name != 'nt':
                     subprocess.run(["termux-volume", "music", "0"], check=True)
-                    command_result = "? Volume MUTED (Local)"
+                    command_result = "✅ Volume MUTED (Local)"
             elif action == "siren":
-                status_text = "?? Command sent: Play Siren ??"
+                status_text = "🎵 Command sent: Play Siren 🚨"
             elif action == "stop":
-                status_text = "?? Command sent: Stop All Actions"
+                status_text = "⏹️ Command sent: Stop All Actions"
             elif action == "location":
-                status_text = "?? Command sent: Request Live Location"
+                status_text = "📍 Command sent: Request Live Location"
                 if os.name != 'nt':
                     # Try to get location locally as well
                     try:
@@ -1127,26 +1221,26 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         if res.returncode == 0:
                             loc = json.loads(res.stdout)
                             await context.bot.send_location(chat_id=query.message.chat_id, latitude=loc['latitude'], longitude=loc['longitude'])
-                            command_result = "?? Location Shared (Local)"
+                            command_result = "📍 Location Shared (Local)"
                     except: pass
             elif action == "cam_front":
-                status_text = "?? Command sent: Capture Front Camera"
+                status_text = "📸 Command sent: Capture Front Camera"
             elif action == "battery":
-                status_text = "?? Command sent: Request Battery Status"
+                status_text = "🔋 Command sent: Request Battery Status"
                 import psutil
                 battery = psutil.sensors_battery()
                 if battery:
-                    command_result = f"?? Battery: {battery.percent}% (Local)"
+                    command_result = f"🔋 Battery: {battery.percent}% (Local)"
             elif action == "settings":
-                status_text = "?? Command sent: Open Settings"
+                status_text = "⚙️ Command sent: Open Settings"
         except Exception as e:
             add_to_logs(f"Local execution failed for {action}: {e}")
 
-        final_msg = f"?? **Remote Phone Command Sent**\n?????????????????????\n?? **Target Device:** User ID `{user_id}`\n? **Action:** {status_text}"
+        final_msg = f"📱 **Remote Phone Command Sent**\n━━━━━━━━━━━━━━━━━━━━━\n👤 **Target Device:** User ID `{user_id}`\n⚡ **Action:** {status_text}"
         if command_result:
             final_msg += f"\n\n{command_result}"
         else:
-            final_msg += f"\n\n? *Waiting for the device to sync...*"
+            final_msg += f"\n\n⏳ *Waiting for the device to sync...*"
 
         await query.message.reply_text(final_msg, parse_mode='HTML')
         return
@@ -1155,7 +1249,7 @@ async def ai_chat(update: Update, message: str = None):
     """AI chat using OpenAI, Ollama (local), or demo mode"""
     if not message:
         await update.message.reply_text(
-            "?? AI Chat\n\n"
+            "🤖 AI Chat\n\n"
             "Usage: /ai [your question]\n"
             "Example: /ai Explain quantum physics\n\n"
             "Powered by: OpenAI or Ollama (local AI)"
@@ -1163,7 +1257,7 @@ async def ai_chat(update: Update, message: str = None):
         return
     
     try:
-        await update.message.reply_text("?? Thinking...")
+        await update.message.reply_text("🤖 Thinking...")
         
         # Check for OpenAI API key
         openai_key = os.getenv("OPENAI_API_KEY")
@@ -1186,7 +1280,7 @@ async def ai_chat(update: Update, message: str = None):
                 if response.status_code == 200:
                     result = response.json()
                     answer = result.get("response", "No response from Ollama")
-                    await update.message.reply_text(f"????? **Einstein:**\n\n{answer[:4000]}")
+                    await update.message.reply_text(f"👨‍🔬 **Einstein:**\n\n{answer[:4000]}")
                     return
                 else:
                     raise Exception(f"Ollama error: {response.status_code}")
@@ -1205,13 +1299,13 @@ async def ai_chat(update: Update, message: str = None):
                     messages=[{"role": "user", "content": message}]
                 )
                 answer = response.choices[0].message.content
-                await update.message.reply_text(f"?? OpenAI:\n\n{answer[:4000]}")
+                await update.message.reply_text(f"🤖 OpenAI:\n\n{answer[:4000]}")
                 return
             except Exception as e:
                 error_msg = str(e)
                 if "quota" in error_msg.lower() or "429" in error_msg:
                     await update.message.reply_text(
-                        "?? OpenAI quota exceeded!\n\n"
+                        "⚠️ OpenAI quota exceeded!\n\n"
                         "Switching to Ollama (local AI)...\n"
                         "Use /ollama [message] for local AI chat"
                     )
@@ -1221,13 +1315,13 @@ async def ai_chat(update: Update, message: str = None):
         
         # Demo mode - simple responses
         responses = {
-            "hello": "?? Hello! How can I help you today?",
-            "hi": "?? Hi there! What can I do for you?",
-            "weather": "??? Use /weather [city] to check weather!",
-            "time": f"?? Current time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            "hello": "👋 Hello! How can I help you today?",
+            "hi": "👋 Hi there! What can I do for you?",
+            "weather": "🌤️ Use /weather [city] to check weather!",
+            "time": f"🕐 Current time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
         }
         answer = responses.get(message.lower(), 
-            f"?? AI Mode (Demo)\n\nYou asked: {message}\n\n"
+            f"🤖 AI Mode (Demo)\n\nYou asked: {message}\n\n"
             f"For full AI responses:\n"
             f"1. Add OPENAI_API_KEY to .env for OpenAI\n"
             f"2. Or install Ollama for free local AI\n"
@@ -1236,7 +1330,7 @@ async def ai_chat(update: Update, message: str = None):
         await update.message.reply_text(answer[:4000])
         
     except Exception as e:
-        await update.message.reply_text(f"? AI error: {str(e)}")
+        await update.message.reply_text(f"❌ AI error: {str(e)}")
 
 # ============== OPENCLAW FEATURES ==============
 
@@ -1244,7 +1338,7 @@ async def browser_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Browser automation using Playwright"""
     if not context.args:
         await update.message.reply_text(
-            "?? Browser Control\n\n"
+            "🌐 Browser Control\n\n"
             "Commands:\n"
             "/browser screenshot [url] - Take screenshot\n"
             "/browser navigate [url] - Navigate to URL\n"
@@ -1260,7 +1354,7 @@ async def browser_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         from playwright.sync_api import sync_playwright
         
-        await update.message.reply_text(f"?? Browser: {action}...")
+        await update.message.reply_text(f"🌐 Browser: {action}...")
         
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
@@ -1274,7 +1368,7 @@ async def browser_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 browser.close()
                 
                 # Send screenshot
-                await update.message.reply_photo(open(screenshot_path, 'rb'), caption=f"?? Screenshot of {url}")
+                await update.message.reply_photo(open(screenshot_path, 'rb'), caption=f"📸 Screenshot of {url}")
                 os.remove(screenshot_path)
                 
             elif action == "navigate":
@@ -1282,13 +1376,13 @@ async def browser_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 page.goto(url)
                 title = page.title()
                 browser.close()
-                await update.message.reply_text(f"?? Navigated to: {title}\n{url}")
+                await update.message.reply_text(f"🌐 Navigated to: {title}\n{url}")
                 
             elif action == "click":
                 selector = context.args[1] if len(context.args) > 1 else "button"
                 page.click(selector)
                 browser.close()
-                await update.message.reply_text(f"??? Clicked: {selector}")
+                await update.message.reply_text(f"🖱️ Clicked: {selector}")
                 
             elif action == "type":
                 if len(context.args) >= 3:
@@ -1296,21 +1390,21 @@ async def browser_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     text = " ".join(context.args[2:])
                     page.fill(selector, text)
                     browser.close()
-                    await update.message.reply_text(f"?? Typed into {selector}")
+                    await update.message.reply_text(f"⌨️ Typed into {selector}")
                 else:
-                    await update.message.reply_text("? Usage: /browser type [selector] [text]")
+                    await update.message.reply_text("❌ Usage: /browser type [selector] [text]")
                     
             elif action == "scroll":
                 page.evaluate("window.scrollBy(0, 500)")
                 browser.close()
-                await update.message.reply_text("?? Scrolled down")
+                await update.message.reply_text("📜 Scrolled down")
                 
             else:
                 browser.close()
-                await update.message.reply_text("? Unknown browser action")
+                await update.message.reply_text("❌ Unknown browser action")
                 
     except Exception as e:
-        await update.message.reply_text(f"? Browser error: {str(e)}")
+        await update.message.reply_text(f"❌ Browser error: {str(e)}")
 
 async def take_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Quick screenshot of desktop or URL"""
@@ -1321,7 +1415,7 @@ async def take_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await browser_control(update, type('Context', (), {'args': ['screenshot', url]})())
         else:
             # Desktop screenshot
-            await update.message.reply_text("?? Taking desktop screenshot...")
+            await update.message.reply_text("📸 Taking desktop screenshot...")
             screenshot_path = f"d:/clow bot/desktop_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
             
             # Use PIL for screenshot
@@ -1329,10 +1423,10 @@ async def take_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
             screenshot = ImageGrab.grab()
             screenshot.save(screenshot_path)
             
-            await update.message.reply_photo(open(screenshot_path, 'rb'), caption="?? Desktop Screenshot")
+            await update.message.reply_photo(open(screenshot_path, 'rb'), caption="📸 Desktop Screenshot")
             os.remove(screenshot_path)
     except Exception as e:
-        await update.message.reply_text(f"? Screenshot error: {str(e)}")
+        await update.message.reply_text(f"❌ Screenshot error: {str(e)}")
 
 def get_github_headers():
     """Helper to rotate between multiple GitHub tokens if one fails or hits rate limit"""
@@ -1354,20 +1448,19 @@ async def github_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """GitHub repository control with multi-token support"""
     if not context.args:
         await update.message.reply_text(
-            "?? **Einstein GitHub Architect**\n"
-            "?????????????????????\n"
+            "🐙 **Einstein GitHub Architect**\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
             "Commands:\n"
-            "� `/github connect [token]` - ?? **Connect GitHub Account**\n"
-            "� `/github website [name]` - ?? **Auto-build & Deploy Website**\n"
-            "� `/github repos` - ?? List your repositories\n"
-            "� `/github create [name]` - ?? Create new repository\n"
-            "� `/github delete [repo]` - ??? Delete repository\n"
-            "� `/github rename [old_name] [new_name]` - ?? Rename repository\n"
-            "� `/github stats [repo]` - ?? View repository statistics\n"
-            "� `/github profile` - ?? View your GitHub profile\n"
-            "� `/github issues [repo]` - ?? Manage issues\n"
-            "� `/github clone [url]` - ?? Clone repository\n\n"
-            "????? *\"Genius is 1% inspiration and 99% automated deployment.\"*",
+            "• `/github website [name]` - 🚀 **Auto-build & Deploy Website**\n"
+            "• `/github repos` - 📂 List your repositories\n"
+            "• `/github create [name]` - 🆕 Create new repository\n"
+            "• `/github delete [repo]` - 🗑️ Delete repository\n"
+            "• `/github rename [old_name] [new_name]` - 📝 Rename repository\n"
+            "• `/github stats [repo]` - 📊 View repository statistics\n"
+            "• `/github profile` - 👤 View your GitHub profile\n"
+            "• `/github issues [repo]` - 🐛 Manage issues\n"
+            "• `/github clone [url]` - 📥 Clone repository\n\n"
+            "👨‍🔬 *\"Genius is 1% inspiration and 99% automated deployment.\"*",
             parse_mode='HTML'
         )
         return
@@ -1377,75 +1470,32 @@ async def github_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if not headers:
         await update.message.reply_text(
-            "?? GitHub Control\n\n"
-            "?? Setup Required:\n"
+            "🐙 GitHub Control\n\n"
+            "⚠️ Setup Required:\n"
             "1. Get GitHub Personal Access Token\n"
             "2. Add to .env: GITHUB_TOKEN=your_token\n\n"
             "Features:\n"
-            "� ?? List repositories\n"
-            "� ?? Create repositories\n"
-            "� ?? Manage issues\n"
-            "� ?? Clone repositories\n"
-            "� ?? View commit history"
+            "• 📂 List repositories\n"
+            "• 🆕 Create repositories\n"
+            "• 🐛 Manage issues\n"
+            "• 📥 Clone repositories\n"
+            "• 📊 View commit history"
         )
         return
     
     try:
         # Existing logic using headers
         
-        if action == "connect" and len(context.args) > 1:
-            token = context.args[1]
-            # Validate token
-            test_headers = {
-                "Authorization": f"Bearer {token}",
-                "Accept": "application/vnd.github.v3+json",
-                "X-GitHub-Api-Version": "2022-11-28"
-            }
-            test_resp = requests.get("https://api.github.com/user", headers=test_headers)
-            
-            if test_resp.status_code == 200:
-                user_data = test_resp.json()
-                # Update .env file
-                env_path = "d:/clow bot main/clow bot/Einstein-Bot-/.env"
-                if os.path.exists(env_path):
-                    with open(env_path, 'r') as f:
-                        lines = f.readlines()
-                    
-                    with open(env_path, 'w') as f:
-                        found = False
-                        for line in lines:
-                            if line.startswith("GITHUB_TOKEN="):
-                                f.write(f"GITHUB_TOKEN={token}\n")
-                                found = True
-                            else:
-                                f.write(line)
-                        if not found:
-                            f.write(f"\nGITHUB_TOKEN={token}\n")
-                    
-                    # Reload env
-                    load_dotenv()
-                    await update.message.reply_text(
-                        f"?? **GitHub Connected Successfully!**\n"
-                        f"?? **User:** `{user_data['login']}`\n"
-                        f"? *\"Connection is the first step towards universal collaboration.\"*",
-                        parse_mode='HTML'
-                    )
-                else:
-                    await update.message.reply_text("? `.env` file not found. Please create one manually.")
-            else:
-                await update.message.reply_text(f"? Invalid token or connection error: {test_resp.status_code}")
-            return
-
         if action == "website" and len(context.args) > 1:
             repo_name = context.args[1]
-            await update.message.reply_text(f"?? **Einstein Web Architect** is designing your site: `{repo_name}`...", parse_mode='HTML')
+            await update.message.reply_text(f"🚀 **Einstein Web Architect** is designing your site: `{repo_name}`...", parse_mode='HTML')
             
             # 1. Create Repository
             create_data = {"name": repo_name, "private": False, "auto_init": True}
             create_resp = requests.post("https://api.github.com/user/repos", headers=headers, json=create_data)
             
             if create_resp.status_code != 201:
-                await update.message.reply_text(f"? Failed to create repo: {create_resp.json().get('message')}")
+                await update.message.reply_text(f"❌ Failed to create repo: {create_resp.json().get('message')}")
                 return
 
             user_data = requests.get("https://api.github.com/user", headers=headers).json()
@@ -1465,7 +1515,7 @@ async def github_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
 </head>
 <body>
     <div class="card">
-        <h1>?? Einstein System Web</h1>
+        <h1>⚛️ Einstein System Web</h1>
         <hr>
         <h2>Welcome to {repo_name}</h2>
         <p>"Logic will get you from A to Z; imagination will get you everywhere."</p>
@@ -1493,10 +1543,10 @@ async def github_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             site_url = f"https://{username}.github.io/{repo_name}/"
             await update.message.reply_text(
-                f"? **Website Created & Deployed!**\n\n"
-                f"?? **Repo:** `github.com/{username}/{repo_name}`\n"
-                f"?? **Live URL:** {site_url}\n\n"
-                f"????? *\"Genius is 1% inspiration and 99% automated deployment.\"*",
+                f"✅ **Website Created & Deployed!**\n\n"
+                f"📂 **Repo:** `github.com/{username}/{repo_name}`\n"
+                f"🌐 **Live URL:** {site_url}\n\n"
+                f"👨‍🔬 *\"Genius is 1% inspiration and 99% automated deployment.\"*",
                 parse_mode='HTML'
             )
             
@@ -1509,9 +1559,9 @@ async def github_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
             response = requests.delete(delete_url, headers=headers)
             
             if response.status_code == 204:
-                await update.message.reply_text(f"??? **Repository Deleted:** `{repo_name}` successfully removed from existence.", parse_mode='HTML')
+                await update.message.reply_text(f"🗑️ **Repository Deleted:** `{repo_name}` successfully removed from existence.", parse_mode='HTML')
             else:
-                await update.message.reply_text(f"? Failed to delete repo: {response.json().get('message', 'Unknown error')}")
+                await update.message.reply_text(f"❌ Failed to delete repo: {response.json().get('message', 'Unknown error')}")
 
         elif action == "rename" and len(context.args) > 2:
             old_name = context.args[1]
@@ -1524,9 +1574,9 @@ async def github_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
             response = requests.patch(rename_url, headers=headers, json=data)
             
             if response.status_code == 200:
-                await update.message.reply_text(f"?? **Repository Renamed:** `{old_name}` is now `{new_name}`.", parse_mode='HTML')
+                await update.message.reply_text(f"📝 **Repository Renamed:** `{old_name}` is now `{new_name}`.", parse_mode='HTML')
             else:
-                await update.message.reply_text(f"? Failed to rename repo: {response.json().get('message', 'Unknown error')}")
+                await update.message.reply_text(f"❌ Failed to rename repo: {response.json().get('message', 'Unknown error')}")
 
         elif action == "stats" and len(context.args) > 1:
             repo_name = context.args[1]
@@ -1538,38 +1588,38 @@ async def github_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             if 'name' in response:
                 stats_text = (
-                    f"?? **Statistics for** `{repo_name}`\n"
-                    f"?????????????????????\n"
-                    f"? **Stars:** `{response['stargazers_count']}`\n"
-                    f"?? **Forks:** `{response['forks_count']}`\n"
-                    f"??? **Watchers:** `{response['watchers_count']}`\n"
-                    f"?? **Open Issues:** `{response['open_issues_count']}`\n"
-                    f"?? **Created:** `{response['created_at'][:10]}`\n"
-                    f"?? **Last Update:** `{response['updated_at'][:10]}`"
+                    f"📊 **Statistics for** `{repo_name}`\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"⭐ **Stars:** `{response['stargazers_count']}`\n"
+                    f"🍴 **Forks:** `{response['forks_count']}`\n"
+                    f"👁️ **Watchers:** `{response['watchers_count']}`\n"
+                    f"🐛 **Open Issues:** `{response['open_issues_count']}`\n"
+                    f"📅 **Created:** `{response['created_at'][:10]}`\n"
+                    f"🕒 **Last Update:** `{response['updated_at'][:10]}`"
                 )
                 await update.message.reply_text(stats_text, parse_mode='HTML')
             else:
-                await update.message.reply_text(f"? Could not find stats for `{repo_name}`.")
+                await update.message.reply_text(f"❌ Could not find stats for `{repo_name}`.")
 
         elif action == "profile":
             user_data = requests.get("https://api.github.com/user", headers=headers).json()
             profile_text = (
-                f"?? **GitHub Profile:** `{user_data['login']}`\n"
-                f"?????????????????????\n"
-                f"?? **Company:** `{user_data.get('company', 'None')}`\n"
-                f"?? **Location:** `{user_data.get('location', 'Global')}`\n"
-                f"?? **Public Repos:** `{user_data['public_repos']}`\n"
-                f"?? **Followers:** `{user_data['followers']}`\n"
-                f"? **Bio:** _{user_data.get('bio', 'No bio set.')}_"
+                f"👤 **GitHub Profile:** `{user_data['login']}`\n"
+                f"━━━━━━━━━━━━━━━━━━━━━\n"
+                f"🏢 **Company:** `{user_data.get('company', 'None')}`\n"
+                f"📍 **Location:** `{user_data.get('location', 'Global')}`\n"
+                f"📂 **Public Repos:** `{user_data['public_repos']}`\n"
+                f"👥 **Followers:** `{user_data['followers']}`\n"
+                f"✨ **Bio:** _{user_data.get('bio', 'No bio set.')}_"
             )
             await update.message.reply_text(profile_text, parse_mode='HTML')
 
         elif action == "repos":
             response = requests.get("https://api.github.com/user/repos", headers=headers)
             repos = response.json()
-            repo_list = "?? Your Repositories:\n\n"
+            repo_list = "🐙 Your Repositories:\n\n"
             for repo in repos[:10]:
-                repo_list += f"� {repo['name']} - {repo['description'] or 'No description'}\n"
+                repo_list += f"• {repo['name']} - {repo['description'] or 'No description'}\n"
             await update.message.reply_text(repo_list[:4000])
             
         elif action == "create" and len(context.args) > 1:
@@ -1577,34 +1627,34 @@ async def github_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
             data = {"name": repo_name, "private": False}
             response = requests.post("https://api.github.com/user/repos", headers=headers, json=data)
             if response.status_code == 201:
-                await update.message.reply_text(f"? Repository created: {repo_name}")
+                await update.message.reply_text(f"✅ Repository created: {repo_name}")
             else:
-                await update.message.reply_text(f"? Error: {response.json().get('message', 'Unknown error')}")
+                await update.message.reply_text(f"❌ Error: {response.json().get('message', 'Unknown error')}")
                 
         else:
-            await update.message.reply_text("?? GitHub command executed")
+            await update.message.reply_text("🐙 GitHub command executed")
             
     except Exception as e:
-        await update.message.reply_text(f"? GitHub error: {str(e)}")
+        await update.message.reply_text(f"❌ GitHub error: {str(e)}")
 
 async def twitter_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Twitter/X posting and control"""
     if not context.args:
         await update.message.reply_text(
-            "?? Twitter/X Control\n\n"
+            "🐦 Twitter/X Control\n\n"
             "Commands:\n"
             "/twitter post [text] - Post tweet\n"
             "/twitter timeline - View timeline\n"
             "/twitter search [query] - Search tweets\n\n"
-            "?? Add Twitter API keys to .env"
+            "⚠️ Add Twitter API keys to .env"
         )
         return
     
     action = context.args[0].lower()
     
     await update.message.reply_text(
-        "?? Twitter/X Control\n\n"
-        "?? Setup Required:\n"
+        "🐦 Twitter/X Control\n\n"
+        "⚠️ Setup Required:\n"
         "1. Twitter Developer Account\n"
         "2. Add API keys to .env:\n"
         "   TWITTER_API_KEY=xxx\n"
@@ -1612,44 +1662,44 @@ async def twitter_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "   TWITTER_ACCESS_TOKEN=xxx\n"
         "   TWITTER_ACCESS_SECRET=xxx\n\n"
         "Features:\n"
-        "� ?? Post tweets\n"
-        "� ?? View timeline\n"
-        "� ?? Search tweets\n"
-        "� ?? Reply to tweets\n"
-        "� ?? Like/Retweet"
+        "• 📝 Post tweets\n"
+        "• 📊 View timeline\n"
+        "• 🔍 Search tweets\n"
+        "• 💬 Reply to tweets\n"
+        "• ❤️ Like/Retweet"
     )
 
 async def gmail_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Gmail email control"""
     if not context.args:
         await update.message.reply_text(
-            "?? Gmail Control\n\n"
+            "📧 Gmail Control\n\n"
             "Commands:\n"
             "/gmail inbox - Check inbox\n"
             "/gmail send [to] [subject] [body] - Send email\n"
             "/gmail search [query] - Search emails\n\n"
-            "?? Add Gmail credentials to .env"
+            "⚠️ Add Gmail credentials to .env"
         )
         return
     
     await update.message.reply_text(
-        "?? Gmail Control\n\n"
-        "?? Setup Required:\n"
+        "📧 Gmail Control\n\n"
+        "⚠️ Setup Required:\n"
         "1. Enable Gmail API in Google Cloud\n"
         "2. Add credentials to .env\n\n"
         "Features:\n"
-        "� ?? Read emails\n"
-        "� ?? Send emails\n"
-        "� ?? Search emails\n"
-        "� ??? Manage labels\n"
-        "� ?? Attachments"
+        "• 📥 Read emails\n"
+        "• 📤 Send emails\n"
+        "• 🔍 Search emails\n"
+        "• 🏷️ Manage labels\n"
+        "• 📎 Attachments"
     )
 
 async def spotify_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Spotify music control"""
     if not context.args:
         await update.message.reply_text(
-            "?? Spotify Control\n\n"
+            "🎵 Spotify Control\n\n"
             "Commands:\n"
             "/spotify play - Resume playback\n"
             "/spotify pause - Pause\n"
@@ -1657,26 +1707,26 @@ async def spotify_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "/spotify prev - Previous track\n"
             "/spotify search [song] - Search music\n"
             "/spotify current - Now playing\n\n"
-            "?? Add Spotify credentials to .env"
+            "⚠️ Add Spotify credentials to .env"
         )
         return
     
     action = context.args[0].lower()
     
     await update.message.reply_text(
-        "?? Spotify Control\n\n"
-        "?? Setup Required:\n"
+        "🎵 Spotify Control\n\n"
+        "⚠️ Setup Required:\n"
         "1. Spotify Developer Account\n"
         "2. Add to .env:\n"
         "   SPOTIFY_CLIENT_ID=xxx\n"
         "   SPOTIFY_CLIENT_SECRET=xxx\n"
         "   SPOTIFY_REFRESH_TOKEN=xxx\n\n"
         "Features:\n"
-        "� ?? Play/Pause/Skip\n"
-        "� ?? Search tracks\n"
-        "� ?? Manage playlists\n"
-        "� ?? Volume control\n"
-        "� ?? View queue"
+        "• ▶️ Play/Pause/Skip\n"
+        "• 🔍 Search tracks\n"
+        "• 📋 Manage playlists\n"
+        "• 🔊 Volume control\n"
+        "• 📊 View queue"
     )
 
 async def notes_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1689,14 +1739,14 @@ async def notes_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             notes = [f for f in os.listdir(notes_dir) if f.endswith('.md')]
             if notes:
-                notes_list = "?? Your Notes:\n\n"
+                notes_list = "📝 Your Notes:\n\n"
                 for i, note in enumerate(notes, 1):
                     notes_list += f"{i}. {note[:-3]}\n"
                 await update.message.reply_text(notes_list)
             else:
-                await update.message.reply_text("?? No notes found. Create one with:\n/note create [title] [content]")
+                await update.message.reply_text("📝 No notes found. Create one with:\n/note create [title] [content]")
         except Exception as e:
-            await update.message.reply_text(f"? Error: {str(e)}")
+            await update.message.reply_text(f"❌ Error: {str(e)}")
         return
     
     action = context.args[0].lower()
@@ -1712,7 +1762,7 @@ async def notes_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f.write(f"Created: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
                 f.write(content)
             
-            await update.message.reply_text(f"? Note created: {title}")
+            await update.message.reply_text(f"✅ Note created: {title}")
             
         elif action == "read" and len(context.args) >= 2:
             title = context.args[1]
@@ -1721,9 +1771,9 @@ async def notes_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if os.path.exists(filename):
                 with open(filename, 'r', encoding='utf-8') as f:
                     content = f.read()
-                await update.message.reply_text(f"?? {title}:\n\n{content[:4000]}")
+                await update.message.reply_text(f"📝 {title}:\n\n{content[:4000]}")
             else:
-                await update.message.reply_text(f"? Note not found: {title}")
+                await update.message.reply_text(f"❌ Note not found: {title}")
                 
         elif action == "delete" and len(context.args) >= 2:
             title = context.args[1]
@@ -1731,18 +1781,18 @@ async def notes_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             if os.path.exists(filename):
                 os.remove(filename)
-                await update.message.reply_text(f"??? Note deleted: {title}")
+                await update.message.reply_text(f"🗑️ Note deleted: {title}")
             else:
-                await update.message.reply_text(f"? Note not found: {title}")
+                await update.message.reply_text(f"❌ Note not found: {title}")
                 
         elif action == "list":
             notes = [f[:-3] for f in os.listdir(notes_dir) if f.endswith('.md')]
-            notes_list = "?? Your Notes:\n\n" + "\n".join(notes) if notes else "No notes found."
+            notes_list = "📝 Your Notes:\n\n" + "\n".join(notes) if notes else "No notes found."
             await update.message.reply_text(notes_list[:4000])
             
         else:
             await update.message.reply_text(
-                "?? Notes Manager\n\n"
+                "📝 Notes Manager\n\n"
                 "Commands:\n"
                 "/note create [title] [content]\n"
                 "/note read [title]\n"
@@ -1750,7 +1800,7 @@ async def notes_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "/note list"
             )
     except Exception as e:
-        await update.message.reply_text(f"? Notes error: {str(e)}")
+        await update.message.reply_text(f"❌ Notes error: {str(e)}")
 
 async def reminders_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Task and reminder management"""
@@ -1758,7 +1808,7 @@ async def reminders_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if not context.args:
         await update.message.reply_text(
-            "? Reminders Manager\n\n"
+            "⏰ Reminders Manager\n\n"
             "Commands:\n"
             "/remind add [time] [message] - Add reminder\n"
             "/remind list - View all reminders\n"
@@ -1793,17 +1843,17 @@ async def reminders_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
             with open(reminders_file, 'w') as f:
                 json.dump(reminders, f, indent=2)
             
-            await update.message.reply_text(f"? Reminder set: {message} in {time_str}")
+            await update.message.reply_text(f"⏰ Reminder set: {message} in {time_str}")
             
         elif action == "list":
             if reminders:
-                reminder_list = "? Your Reminders:\n\n"
+                reminder_list = "⏰ Your Reminders:\n\n"
                 for r in reminders:
-                    status = "?" if r['done'] else "?"
+                    status = "✅" if r['done'] else "⏳"
                     reminder_list += f"{status} #{r['id']}: {r['message']} ({r['time']})\n"
                 await update.message.reply_text(reminder_list[:4000])
             else:
-                await update.message.reply_text("? No reminders set.")
+                await update.message.reply_text("⏰ No reminders set.")
                 
         elif action == "delete" and len(context.args) >= 2:
             rid = int(context.args[1])
@@ -1812,59 +1862,59 @@ async def reminders_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
             with open(reminders_file, 'w') as f:
                 json.dump(reminders, f, indent=2)
             
-            await update.message.reply_text(f"??? Reminder #{rid} deleted")
+            await update.message.reply_text(f"🗑️ Reminder #{rid} deleted")
             
         else:
             await update.message.reply_text(
-                "? Reminders Manager\n\n"
+                "⏰ Reminders Manager\n\n"
                 "/remind add [time] [message]\n"
                 "/remind list\n"
                 "/remind delete [id]"
             )
     except Exception as e:
-        await update.message.reply_text(f"? Reminder error: {str(e)}")
+        await update.message.reply_text(f"❌ Reminder error: {str(e)}")
 
 async def smarthome_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Smart home (Philips Hue) control"""
     if not context.args:
         await update.message.reply_text(
-            "?? Smart Home Control\n\n"
+            "🏠 Smart Home Control\n\n"
             "Commands:\n"
             "/home lights on - Turn on lights\n"
             "/home lights off - Turn off lights\n"
             "/home color [color] - Change light color\n"
             "/home brightness [0-100] - Set brightness\n\n"
-            "?? Add Hue Bridge IP to .env"
+            "⚠️ Add Hue Bridge IP to .env"
         )
         return
     
     await update.message.reply_text(
-        "?? Smart Home Control\n\n"
-        "?? Setup Required:\n"
+        "🏠 Smart Home Control\n\n"
+        "⚠️ Setup Required:\n"
         "1. Philips Hue Bridge\n"
         "2. Add to .env:\n"
         "   HUE_BRIDGE_IP=192.168.x.x\n"
         "   HUE_USERNAME=your_username\n\n"
         "Features:\n"
-        "� ?? Light on/off\n"
-        "� ?? Color control\n"
-        "� ?? Brightness\n"
-        "� ?? Room control\n"
-        "� ? Schedules"
+        "• 💡 Light on/off\n"
+        "• 🎨 Color control\n"
+        "• 🔆 Brightness\n"
+        "• 📋 Room control\n"
+        "• ⏰ Schedules"
     )
 
 async def calculator(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Calculator - evaluate math expressions safely"""
     if not context.args:
         await update.message.reply_text(
-            "?? **Einstein Mathematical Engine**\n"
-            "?????????????????????\n"
+            "🧮 **Einstein Mathematical Engine**\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
             "Usage: `/calc [expression]`\n\n"
             "**Scientific Examples:**\n"
-            "� `5 + 3 * 2`\n"
-            "� `sqrt(16) * pi`\n"
-            "� `2 ** 8` (Power)\n\n"
-            "? *\"Pure mathematics is, in its way, the poetry of logical ideas.\"*",
+            "• `5 + 3 * 2`\n"
+            "• `sqrt(16) * pi`\n"
+            "• `2 ** 8` (Power)\n\n"
+            "✨ *\"Pure mathematics is, in its way, the poetry of logical ideas.\"*",
             parse_mode='HTML'
         )
         return
@@ -1883,56 +1933,56 @@ async def calculator(update: Update, context: ContextTypes.DEFAULT_TYPE):
         result = eval(expression, {"__builtins__": {}}, allowed_names)
         
         await update.message.reply_text(
-            f"?? **Calculation Result**\n"
-            "?????????????????????\n"
-            f"?? **Input:** `{expression}`\n"
-            f"? **Output:** `{result}`\n\n"
-            "?? *Calculated with 99.9% precision.*",
+            f"🧪 **Calculation Result**\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🔢 **Input:** `{expression}`\n"
+            f"✅ **Output:** `{result}`\n\n"
+            "🔭 *Calculated with 99.9% precision.*",
             parse_mode='HTML'
         )
     except Exception as e:
-        await update.message.reply_text(f"? **Mathematical Error**\n`{str(e)}`")
+        await update.message.reply_text(f"❌ **Mathematical Error**\n`{str(e)}`")
 
 async def random_joke(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Get a random joke with Einstein flair"""
     jokes = [
-        "Why don't scientists trust atoms? Because they make up everything! ??",
-        "Why don't eggs tell jokes? They'd crack each other up! ??",
-        "What do you call a fake noodle? An impasta! ??",
-        "Why did the scarecrow win an award? He was outstanding in his field! ??",
-        "Why don't skeletons fight each other? They don't have the guts! ??",
-        "What do you call a bear with no teeth? A gummy bear! ??",
-        "Why did the coffee file a police report? It got mugged! ?",
-        "What's orange and sounds like a parrot? A carrot! ??"
+        "Why don't scientists trust atoms? Because they make up everything! ⚛️",
+        "Why don't eggs tell jokes? They'd crack each other up! 🥚",
+        "What do you call a fake noodle? An impasta! 🍝",
+        "Why did the scarecrow win an award? He was outstanding in his field! 🌾",
+        "Why don't skeletons fight each other? They don't have the guts! 💀",
+        "What do you call a bear with no teeth? A gummy bear! 🐻",
+        "Why did the coffee file a police report? It got mugged! ☕",
+        "What's orange and sounds like a parrot? A carrot! 🥕"
     ]
     
     import random
     joke = random.choice(jokes)
     reply_text = (
-        "?? **Einstein's Laboratory of Humor**\n"
-        "?????????????????????\n\n"
+        "😄 **Einstein's Laboratory of Humor**\n"
+        "━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"{joke}\n\n"
-        "?? *\"Laughter is the shortest distance between two people.\"*"
+        "🧪 *\"Laughter is the shortest distance between two people.\"*"
     )
     await update.message.reply_text(reply_text, parse_mode='HTML')
 
 async def random_quote(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Get a random inspirational quote with Einstein flair"""
     quotes = [
-        "The only way to do great work is to love what you do. - Steve Jobs ??",
-        "Innovation distinguishes between a leader and a follower. - Steve Jobs ??",
-        "The future belongs to those who believe in the beauty of their dreams. - Eleanor Roosevelt ?",
-        "In the middle of difficulty lies opportunity. - Albert Einstein ??",
-        "Success is not final, failure is not fatal. - Winston Churchill ??"
+        "The only way to do great work is to love what you do. - Steve Jobs 💪",
+        "Innovation distinguishes between a leader and a follower. - Steve Jobs 🚀",
+        "The future belongs to those who believe in the beauty of their dreams. - Eleanor Roosevelt ✨",
+        "In the middle of difficulty lies opportunity. - Albert Einstein 💡",
+        "Success is not final, failure is not fatal. - Winston Churchill 🏆"
     ]
     
     import random
     quote = random.choice(quotes)
     reply_text = (
-        "?? **Einstein's Archive of Wisdom**\n"
-        "?????????????????????\n\n"
+        "📜 **Einstein's Archive of Wisdom**\n"
+        "━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"{quote}\n\n"
-        "? *Words to light up your neural pathways.*"
+        "✨ *Words to light up your neural pathways.*"
     )
     await update.message.reply_text(reply_text, parse_mode='HTML')
 
@@ -1952,11 +2002,11 @@ async def roll_dice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     result = random.randint(1, sides)
     
     reply_text = (
-        "?? **Einstein's Probability Experiment**\n"
-        "?????????????????????\n\n"
-        f"?? **SIDES:** `{sides}`\n"
-        f"? **RESULT:** `{result}`\n\n"
-        "?? *\"God does not play dice with the universe.\"*"
+        "🎲 **Einstein's Probability Experiment**\n"
+        "━━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"🎯 **SIDES:** `{sides}`\n"
+        f"✨ **RESULT:** `{result}`\n\n"
+        "🔭 *\"God does not play dice with the universe.\"*"
     )
     await update.message.reply_text(reply_text, parse_mode='HTML')
 
@@ -1964,19 +2014,19 @@ async def flip_coin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Flip a coin with Einstein flair"""
     import random
     result = random.choice(['Heads', 'Tails'])
-    emoji = '??'
+    emoji = '🪙'
     
     reply_text = (
-        "?? **Einstein's Quantum Toss**\n"
-        "?????????????????????\n\n"
-        f"?? **Outcome:** `{result}`\n\n"
-        "? *Every action has an equal and opposite reaction.*"
+        "🪙 **Einstein's Quantum Toss**\n"
+        "━━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"📊 **Outcome:** `{result}`\n\n"
+        "✨ *Every action has an equal and opposite reaction.*"
     )
     await update.message.reply_text(reply_text, parse_mode='HTML')
     await update.message.reply_text(
-        f"?? Flipping coin...\n\n"
+        f"🪙 Flipping coin...\n\n"
         f"{emoji} **{result}**!\n\n"
-        f"{'?? Heads wins!' if result == 'Heads' else '? Tails wins!'}",
+        f"{'👑 Heads wins!' if result == 'Heads' else '✨ Tails wins!'}",
         parse_mode='HTML'
     )
 
@@ -1997,14 +2047,14 @@ async def world_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ('Dubai', 'Asia/Dubai'),
         ]
         
-        msg = "?? **World Time**\n\n"
+        msg = "🌍 **World Time**\n\n"
         for city, tz in cities:
             try:
                 time = datetime.now(pytz.timezone(tz)).strftime('%Y-%m-%d %H:%M:%S')
-                msg += f"?? {city}: `{time}`\n"
+                msg += f"📍 {city}: `{time}`\n"
             except:
                 time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-                msg += f"?? {city}: `{time} UTC`\n"
+                msg += f"📍 {city}: `{time} UTC`\n"
         
         await update.message.reply_text(msg, parse_mode='HTML')
         return
@@ -2048,16 +2098,16 @@ async def world_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             time = datetime.now(pytz.timezone(tz_name)).strftime('%Y-%m-%d %H:%M:%S')
             await update.message.reply_text(
-                f"?? **{city.title()} Time**\n\n"
-                f"?? `{time}`\n\n"
-                f"?? Timezone: `{tz_name}`",
+                f"🌍 **{city.title()} Time**\n\n"
+                f"📅 `{time}`\n\n"
+                f"🕐 Timezone: `{tz_name}`",
                 parse_mode='HTML'
             )
         except:
-            await update.message.reply_text(f"? Could not get time for {city}")
+            await update.message.reply_text(f"❌ Could not get time for {city}")
     else:
         await update.message.reply_text(
-            f"? Unknown city: {city}\n\n"
+            f"❌ Unknown city: {city}\n\n"
             f"Try: Dhaka, London, New York, Tokyo, Sydney, Dubai, Paris, etc.\n"
             f"Or use /time without arguments for major cities."
         )
@@ -2075,31 +2125,31 @@ async def ip_lookup(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         if info.get('status') == 'success':
             msg = (
-                f"?? **Your IP Information**\n\n"
-                f"?? **IP Address:** `{public_ip}`\n"
-                f"?? **ISP:** {info.get('isp', 'Unknown')}\n"
-                f"??? **Organization:** {info.get('org', 'Unknown')}\n"
-                f"?? **Location:** {info.get('city', 'Unknown')}, {info.get('country', 'Unknown')}\n"
-                f"??? **Country Code:** {info.get('countryCode', 'Unknown')}\n"
-                f"?? **Region:** {info.get('regionName', 'Unknown')}\n"
-                f"?? **ZIP:** {info.get('zip', 'Unknown')}\n"
-                f"?? **Timezone:** {info.get('timezone', 'Unknown')}\n"
-                f"?? **Lat/Lon:** {info.get('lat', 0):.4f}, {info.get('lon', 0):.4f}\n\n"
-                f"?? Note: VPN/Proxy may affect accuracy"
+                f"🌐 **Your IP Information**\n\n"
+                f"📍 **IP Address:** `{public_ip}`\n"
+                f"🏢 **ISP:** {info.get('isp', 'Unknown')}\n"
+                f"🏛️ **Organization:** {info.get('org', 'Unknown')}\n"
+                f"🌍 **Location:** {info.get('city', 'Unknown')}, {info.get('country', 'Unknown')}\n"
+                f"🏳️ **Country Code:** {info.get('countryCode', 'Unknown')}\n"
+                f"📍 **Region:** {info.get('regionName', 'Unknown')}\n"
+                f"📮 **ZIP:** {info.get('zip', 'Unknown')}\n"
+                f"🕐 **Timezone:** {info.get('timezone', 'Unknown')}\n"
+                f"📡 **Lat/Lon:** {info.get('lat', 0):.4f}, {info.get('lon', 0):.4f}\n\n"
+                f"⚠️ Note: VPN/Proxy may affect accuracy"
             )
         else:
-            msg = f"?? **Your Public IP:** `{public_ip}`\n\n?? Could not fetch detailed info"
+            msg = f"🌐 **Your Public IP:** `{public_ip}`\n\n⚠️ Could not fetch detailed info"
         
         await update.message.reply_text(msg, parse_mode='HTML')
         
     except Exception as e:
-        await update.message.reply_text(f"? Could not fetch IP info: {str(e)}")
+        await update.message.reply_text(f"❌ Could not fetch IP info: {str(e)}")
 
 async def wikipedia_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Search Wikipedia"""
     if not context.args:
         await update.message.reply_text(
-            "?? Wikipedia Search\n\n"
+            "📚 Wikipedia Search\n\n"
             "Usage: /wiki [search term]\n\n"
             "Examples:\n"
             "/wiki Albert Einstein\n"
@@ -2111,7 +2161,7 @@ async def wikipedia_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = " ".join(context.args)
     
     try:
-        await update.message.reply_text(f"?? Searching Wikipedia for: {query}...")
+        await update.message.reply_text(f"🔍 Searching Wikipedia for: {query}...")
         
         # Wikipedia API
         url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{requests.utils.quote(query.replace(' ', '_'))}"
@@ -2124,11 +2174,11 @@ async def wikipedia_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
             page_url = data.get('content_urls', {}).get('desktop', {}).get('page', '')
             
             msg = (
-                f"?? **{title}**\n\n"
+                f"📚 **{title}**\n\n"
                 f"{extract[:2000]}\n\n"
             )
             if page_url:
-                msg += f"?? Read more: {page_url}"
+                msg += f"🔗 Read more: {page_url}"
             
             await update.message.reply_text(msg, parse_mode='HTML')
         else:
@@ -2139,22 +2189,22 @@ async def wikipedia_search(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             results = search_data.get('query', {}).get('search', [])
             if results:
-                msg = f"?? Wikipedia search results for '{query}':\n\n"
+                msg = f"📚 Wikipedia search results for '{query}':\n\n"
                 for i, result in enumerate(results[:5], 1):
                     snippet = result.get('snippet', '').replace('<span class="searchmatch">', '').replace('</span>', '')
                     title = result.get('title', '')
                     msg += f"{i}. **{title}**\n{snippet[:100]}...\n\n"
                 await update.message.reply_text(msg, parse_mode='HTML')
             else:
-                await update.message.reply_text(f"? No Wikipedia results found for: {query}")
+                await update.message.reply_text(f"❌ No Wikipedia results found for: {query}")
                 
     except Exception as e:
-        await update.message.reply_text(f"? Wikipedia search error: {str(e)}")
+        await update.message.reply_text(f"❌ Wikipedia search error: {str(e)}")
 
 async def translate_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Translate a replied-to message"""
     if not update.message.reply_to_message or not update.message.reply_to_message.text:
-        await update.message.reply_text("? Please reply to a text message to translate it.")
+        await update.message.reply_text("❌ Please reply to a text message to translate it.")
         return
 
     text_to_translate = update.message.reply_to_message.text
@@ -2186,22 +2236,22 @@ async def translate_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if data.get('responseStatus') == 200:
             translation = data.get('responseData', {}).get('translatedText', '')
             await update.message.reply_text(
-                f"????? **Einstein Translation**\n"
-                f"???????????????\n"
-                f"?? **Target:** {target_lang.title()}\n\n"
+                f"👨‍🔬 **Einstein Translation**\n"
+                f"━━━━━━━━━━━━━━━\n"
+                f"🎯 **Target:** {target_lang.title()}\n\n"
                 f"{translation}",
                 parse_mode='HTML'
             )
         else:
-            await update.message.reply_text("? Translation service failed.")
+            await update.message.reply_text("❌ Translation service failed.")
     except Exception as e:
-        await update.message.reply_text(f"? Error: {str(e)}")
+        await update.message.reply_text(f"❌ Error: {str(e)}")
 
 async def translate_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Translate text using free API"""
     if len(context.args) < 3:
         await update.message.reply_text(
-            "?? Text Translation\n\n"
+            "🌐 Text Translation\n\n"
             "Usage: /translate [text] to [language]\n\n"
             "Examples:\n"
             "/translate Hello to Spanish\n"
@@ -2223,7 +2273,7 @@ async def translate_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = " ".join(context.args[:to_index])
         target_lang = " ".join(context.args[to_index + 1:])
     except ValueError:
-        await update.message.reply_text("? Usage: /translate [text] to [language]")
+        await update.message.reply_text("❌ Usage: /translate [text] to [language]")
         return
     
     # Map language names to codes
@@ -2247,7 +2297,7 @@ async def translate_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         target_code = target_lang.lower()[:2]  # Assume it's already a code
     
     try:
-        await update.message.reply_text(f"?? Translating to {target_lang.title()}...")
+        await update.message.reply_text(f"🌐 Translating to {target_lang.title()}...")
         
         # Using mymemory API (free)
         url = f"https://api.mymemory.translated.net/get?q={requests.utils.quote(text)}&langpair=en|{target_code}"
@@ -2258,104 +2308,28 @@ async def translate_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             translation = data.get('responseData', {}).get('translatedText', '')
             
             await update.message.reply_text(
-                f"?? **Translation**\n\n"
-                f"???? **Original:** {text}\n\n"
-                f"?? **Translated ({target_lang.title()}):**\n"
+                f"🌐 **Translation**\n\n"
+                f"🇬🇧 **Original:** {text}\n\n"
+                f"🎯 **Translated ({target_lang.title()}):**\n"
                 f"{translation}",
                 parse_mode='HTML'
             )
         else:
             # Fallback to alternative translation method
             await update.message.reply_text(
-                f"?? Translation service unavailable\n\n"
+                f"⚠️ Translation service unavailable\n\n"
                 f"Original: {text}\n"
                 f"Target language: {target_lang}"
             )
             
     except Exception as e:
-        await update.message.reply_text(f"? Translation error: {str(e)}")
-
-async def get_latest_news(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Fetch latest global news"""
-    try:
-        url = "https://ok.surf/api/v1/cors/news-feed"
-        response = requests.get(url, timeout=10)
-        data = response.json()
-        
-        if data:
-            news_text = "?? **Einstein's Global News Bulletin**\n?????????????????????\n\n"
-            count = 0
-            for category in data:
-                if isinstance(data[category], list):
-                    for item in data[category]:
-                        if count >= 5: break
-                        title = item.get('title')
-                        link = item.get('link')
-                        source = item.get('source')
-                        news_text += f"?? **{title}**\n??? Source: {source}\n?? [Read]({link})\n\n"
-                        count += 1
-                if count >= 5: break
-            
-            news_text += "????? *\"The world as we have created it is a process of our thinking.\"*"
-            await update.message.reply_text(news_text, parse_mode='HTML', disable_web_page_preview=True)
-        else:
-            await update.message.reply_text("? Could not fetch news at this moment.")
-    except Exception as e:
-        await update.message.reply_text(f"? News Error: {str(e)}")
-
-async def crypto_prices(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Fetch cryptocurrency prices from CoinGecko"""
-    try:
-        url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,binancecoin,solana,cardano&vs_currencies=usd&include_24hr_change=true"
-        response = requests.get(url, timeout=10)
-        data = response.json()
-        
-        prices_text = "?? **Einstein's Crypto Ledger**\n?????????????????????\n\n"
-        coins = {
-            'bitcoin': 'BTC',
-            'ethereum': 'ETH',
-            'binancecoin': 'BNB',
-            'solana': 'SOL',
-            'cardano': 'ADA'
-        }
-        
-        for id, symbol in coins.items():
-            if id in data:
-                price = data[id]['usd']
-                change = data[id]['usd_24h_change']
-                emoji = "??" if change > 0 else "??"
-                prices_text += f"?? **{symbol}:** `${price:,}` ({emoji} `{change:.2f}%`)\n"
-            
-        prices_text += "\n?? *\"Relativity applies to physics, not your wallet stability.\"*"
-        await update.message.reply_text(prices_text, parse_mode='HTML')
-    except Exception as e:
-        await update.message.reply_text(f"? Crypto Error: {str(e)}")
-
-async def currency_converter(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Simple currency rates (USD based)"""
-    try:
-        url = "https://api.exchangerate-api.com/v4/latest/USD"
-        response = requests.get(url, timeout=10)
-        data = response.json()
-        
-        rates = data.get('rates', {})
-        targets = ['EUR', 'GBP', 'INR', 'BDT', 'JPY', 'CAD']
-        
-        conv_text = "?? **Einstein's Exchange Rates (Base: 1 USD)**\n?????????????????????\n\n"
-        for code in targets:
-            if code in rates:
-                conv_text += f"?? **1 USD =** `{rates[code]} {code}`\n"
-        
-        conv_text += "\n?? *\"Everything should be made as simple as possible, but not simpler.\"*"
-        await update.message.reply_text(conv_text, parse_mode='HTML')
-    except Exception as e:
-        await update.message.reply_text(f"? Currency Error: {str(e)}")
+        await update.message.reply_text(f"❌ Translation error: {str(e)}")
 
 async def set_timer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Set a timer/reminder"""
     if len(context.args) < 2:
         await update.message.reply_text(
-            "? Timer & Reminder\n\n"
+            "⏰ Timer & Reminder\n\n"
             "Usage: /timer [time] [message]\n\n"
             "Examples:\n"
             "/timer 5m Take a break\n"
@@ -2363,9 +2337,9 @@ async def set_timer(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "/timer 30s Test notification\n"
             "/timer 2h 30m Dinner time\n\n"
             "Time format:\n"
-            "� s = seconds\n"
-            "� m = minutes\n"
-            "� h = hours"
+            "• s = seconds\n"
+            "• m = minutes\n"
+            "• h = hours"
         )
         return
     
@@ -2394,17 +2368,17 @@ async def set_timer(update: Update, context: ContextTypes.DEFAULT_TYPE):
             total_seconds = int(time_arg) * 60
             
     except:
-        await update.message.reply_text("? Invalid time format. Use: 5m, 1h, 30s, 2h30m")
+        await update.message.reply_text("❌ Invalid time format. Use: 5m, 1h, 30s, 2h30m")
         return
     
     if total_seconds <= 0 or total_seconds > 86400:  # Max 24 hours
-        await update.message.reply_text("? Invalid time. Range: 1 second to 24 hours")
+        await update.message.reply_text("❌ Invalid time. Range: 1 second to 24 hours")
         return
     
     # Confirm timer set
     time_str = f"{total_seconds // 3600}h {(total_seconds % 3600) // 60}m {total_seconds % 60}s"
     await update.message.reply_text(
-        f"? **Timer Set!**\n\n"
+        f"⏰ **Timer Set!**\n\n"
         f"Message: {message}\n"
         f"Duration: {time_str}\n\n"
         f"I'll remind you when time is up!",
@@ -2417,9 +2391,9 @@ async def set_timer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Send reminder
     await update.message.reply_text(
-        f"? **TIME'S UP!**\n\n"
-        f"?? Reminder: {message}\n\n"
-        f"? Timer completed!",
+        f"⏰ **TIME'S UP!**\n\n"
+        f"🔔 Reminder: {message}\n\n"
+        f"✅ Timer completed!",
         parse_mode='HTML'
     )
 
@@ -2427,7 +2401,7 @@ async def unit_converter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Convert between units"""
     if len(context.args) < 4:
         await update.message.reply_text(
-            "?? Unit Converter\n\n"
+            "📐 Unit Converter\n\n"
             "Usage: /convert [value] [unit] to [unit]\n\n"
             "Examples:\n"
             "/convert 100 km to miles\n"
@@ -2436,11 +2410,11 @@ async def unit_converter(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "/convert 5 feet to meters\n"
             "/convert 1 gb to mb\n\n"
             "Categories:\n"
-            "� Length: km, miles, meters, feet, inches\n"
-            "� Weight: kg, lbs, grams, ounces\n"
-            "� Temperature: celsius, fahrenheit, kelvin\n"
-            "� Digital: gb, mb, kb, tb\n"
-            "� Area: sqkm, sqmiles, acres"
+            "• Length: km, miles, meters, feet, inches\n"
+            "• Weight: kg, lbs, grams, ounces\n"
+            "• Temperature: celsius, fahrenheit, kelvin\n"
+            "• Digital: gb, mb, kb, tb\n"
+            "• Area: sqkm, sqmiles, acres"
         )
         return
     
@@ -2506,65 +2480,65 @@ async def unit_converter(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         if result is not None:
             await update.message.reply_text(
-                f"?? **Unit Conversion**\n\n"
+                f"📐 **Unit Conversion**\n\n"
                 f"{value} {from_unit} = **{result:.4f}** {to_unit}",
                 parse_mode='HTML'
             )
         else:
             await update.message.reply_text(
-                f"? Conversion not available: {from_unit} to {to_unit}\n\n"
+                f"❌ Conversion not available: {from_unit} to {to_unit}\n\n"
                 f"Use /convert for available units"
             )
             
     except ValueError:
-        await update.message.reply_text("? Invalid value. Please enter a number.")
+        await update.message.reply_text("❌ Invalid value. Please enter a number.")
     except Exception as e:
-        await update.message.reply_text(f"? Conversion error: {str(e)}")
+        await update.message.reply_text(f"❌ Conversion error: {str(e)}")
 
 async def random_facts(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Get random interesting facts"""
     facts = [
-        "?? Octopuses have three hearts, blue blood, and nine brains!",
-        "?? Honey never spoils. Archaeologists have found 3000-year-old honey in ancient Egyptian tombs!",
-        "?? A giraffe's tongue is so long it can clean its own ears!",
-        "?? Kangaroos can't walk backward!",
-        "?? A snail can sleep for three years at a time!",
-        "?? Sharks are the only fish that can blink with both eyes!",
-        "?? An owl can turn its head 270 degrees but can't move its eyes!",
-        "?? Elephants are the only mammals that can't jump!",
-        "?? A hippopotamus can run faster than a human!",
-        "?? Penguins can drink salt water because they have special glands!",
-        "?? Butterflies taste with their feet!",
-        "?? A group of flamingos is called a 'flamboyance'!",
-        "?? Peacocks can fly, despite their massive tails!",
-        "?? Parrots can live for over 80 years!",
-        "?? Tigers have striped skin, not just striped fur!",
-        "?? Every zebra has a unique pattern of stripes, like human fingerprints!",
-        "?? Gorillas can catch human colds and other illnesses!",
-        "?? Koalas sleep up to 22 hours a day!",
-        "?? Sloths can hold their breath longer than dolphins!",
-        "?? A hedgehog's heart beats 300 times per minute!"
+        "🐙 Octopuses have three hearts, blue blood, and nine brains!",
+        "🍯 Honey never spoils. Archaeologists have found 3000-year-old honey in ancient Egyptian tombs!",
+        "🦒 A giraffe's tongue is so long it can clean its own ears!",
+        "🦘 Kangaroos can't walk backward!",
+        "🐌 A snail can sleep for three years at a time!",
+        "🦈 Sharks are the only fish that can blink with both eyes!",
+        "🦉 An owl can turn its head 270 degrees but can't move its eyes!",
+        "🐘 Elephants are the only mammals that can't jump!",
+        "🦛 A hippopotamus can run faster than a human!",
+        "🐧 Penguins can drink salt water because they have special glands!",
+        "🦋 Butterflies taste with their feet!",
+        "🦀 A group of flamingos is called a 'flamboyance'!",
+        "🦚 Peacocks can fly, despite their massive tails!",
+        "🦜 Parrots can live for over 80 years!",
+        "🐯 Tigers have striped skin, not just striped fur!",
+        "🦓 Every zebra has a unique pattern of stripes, like human fingerprints!",
+        "🦍 Gorillas can catch human colds and other illnesses!",
+        "🐨 Koalas sleep up to 22 hours a day!",
+        "🦥 Sloths can hold their breath longer than dolphins!",
+        "🦔 A hedgehog's heart beats 300 times per minute!"
     ]
     
     import random
     fact = random.choice(facts)
-    await update.message.reply_text(f"?? **Did You Know?**\n\n{fact}", parse_mode='HTML')
+    await update.message.reply_text(f"🤓 **Did You Know?**\n\n{fact}", parse_mode='HTML')
 
 async def text_formatter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Format text (uppercase, lowercase, reverse, etc.)"""
     if not context.args:
         await update.message.reply_text(
-            "?? Text Formatter\n\n"
+            "📝 Text Formatter\n\n"
             "Usage: /format [style] [text]\n\n"
             "Styles:\n"
-            "� upper - UPPERCASE\n"
-            "� lower - lowercase\n"
-            "� title - Title Case\n"
-            "� reverse - esreveR\n"
-            "� bold - *Bold Text*\n"
-            "� italic - _Italic Text_\n"
-            "� code - `Code Format`\n"
-            "� spoiler - ||Spoiler||\n\n"
+            "• upper - UPPERCASE\n"
+            "• lower - lowercase\n"
+            "• title - Title Case\n"
+            "• reverse - esreveR\n"
+            "• bold - *Bold Text*\n"
+            "• italic - _Italic Text_\n"
+            "• code - `Code Format`\n"
+            "• spoiler - ||Spoiler||\n\n"
             "Examples:\n"
             "/format upper hello world\n"
             "/format reverse hello"
@@ -2575,7 +2549,7 @@ async def text_formatter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = " ".join(context.args[1:])
     
     if not text:
-        await update.message.reply_text("? Please provide text to format")
+        await update.message.reply_text("❌ Please provide text to format")
         return
     
     formatted = text
@@ -2597,11 +2571,11 @@ async def text_formatter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif style == 'spoiler':
         formatted = f"||{text}||"
     else:
-        await update.message.reply_text(f"? Unknown style: {style}\nUse /format for available styles")
+        await update.message.reply_text(f"❌ Unknown style: {style}\nUse /format for available styles")
         return
     
     await update.message.reply_text(
-        f"?? **Text Formatter**\n\n"
+        f"📝 **Text Formatter**\n\n"
         f"Style: {style.title()}\n"
         f"Result:\n{formatted}",
         parse_mode='HTML'
@@ -2612,8 +2586,8 @@ async def music_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.TYPING)
     if not context.args:
         await update.message.reply_text(
-            "?? **Music Player & Search**\n"
-            "???????????????\n"
+            "🎵 **Music Player & Search**\n"
+            "━━━━━━━━━━━━━━━\n"
             "Search and play any song directly!\n\n"
             "**Usage:**\n"
             "/play [song name] - Search and play\n"
@@ -2629,7 +2603,7 @@ async def music_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE):
     download_dir = "d:/clow bot/downloads"
     os.makedirs(download_dir, exist_ok=True)
     
-    progress_msg = await update.message.reply_text("?? `Searching for your music...`", parse_mode='HTML')
+    progress_msg = await update.message.reply_text("🔍 `Searching for your music...`", parse_mode='HTML')
 
     try:
         import yt_dlp
@@ -2644,41 +2618,69 @@ async def music_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE):
             'no_warnings': True,
             'postprocessors': [],  # No ffmpeg postprocessing
             'default_search': 'ytsearch1',
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
         }
-
+        
+        status_msg = await update.message.reply_text(f"🔍 **Einstein OS:** `Searching YouTube for: {query}...` 🧪", parse_mode='HTML')
+        
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            await progress_msg.edit_text("? `Downloading audio...`", parse_mode='HTML')
-            info = ydl.extract_info(query if query.startswith('http') else f"ytsearch1:{query}", download=True)
+            search_results = await asyncio.get_event_loop().run_in_executor(
+                None, lambda: ydl.extract_info(f"ytsearch1:{query}", download=False)
+            )
             
-            # If it's a search, get the first entry
-            if 'entries' in info:
-                video_info = info['entries'][0]
-            else:
-                video_info = info
-                
-            title = video_info.get('title', 'Unknown Title')
-            filename = ydl.prepare_filename(video_info)
-            # No postprocessing, keep original extension (m4a/webm)
+        if not search_results or 'entries' not in search_results or not search_results['entries']:
+            await status_msg.edit_text("❌ `No results found in the YouTube archives.`")
+            return
 
-            if os.path.exists(filename):
-                await progress_msg.edit_text(f"?? `Uploading: {title[:40]}...` ??", parse_mode='HTML')
-                
-                with open(filename, 'rb') as audio_file:
-                    await update.message.reply_audio(
-                        audio=audio_file,
-                        title=title,
-                        performer="????? OpenClowd Einstein",
-                        caption=f"?? **{title}**\n\n? *Enjoy your high-quality music!*",
-                        parse_mode='HTML'
-                    )
-                
-                os.remove(filename)
-                await progress_msg.delete()
-            else:
-                await progress_msg.edit_text("? Music file not found after download.")
-                
+        await status_msg.delete()
+        
+        for entry in search_results['entries']:
+            if not entry: continue
+            
+            title = entry.get('title', 'Unknown Title')
+            video_id = entry.get('id')
+            video_url = f"https://www.youtube.com/watch?v={video_id}"
+            channel = entry.get('uploader', 'Unknown Channel')
+            duration = entry.get('duration_string', 'N/A')
+            
+            keyboard = [
+                [
+                    InlineKeyboardButton("🎵 Play Audio", callback_data=f"dl_audio_{video_id}"),
+                    InlineKeyboardButton("🎬 Play Video", callback_data=f"dl_video_{video_id}")
+                ],
+                [
+                    InlineKeyboardButton("📺 Open YouTube", url=video_url)
+                ]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            caption = (
+                f"🎬 **{escape_html(title)}**\n"
+                f"━━━━━━━━━━━━━━━━━━━━━\n"
+                f"👤 **Channel:** `{escape_html(channel)}`\n"
+                f"⏱ **Duration:** `{duration}`\n"
+                f"🔗 <a href='{video_url}'>Watch on YouTube</a>"
+            )
+            
+            thumb = entry.get('thumbnail')
+            
+            try:
+                if thumb:
+                    await update.message.reply_photo(photo=thumb, caption=caption, reply_markup=reply_markup, parse_mode='HTML')
+                else:
+                    await update.message.reply_text(caption, reply_markup=reply_markup, parse_mode='HTML', disable_web_page_preview=False)
+            except Exception:
+                await update.message.reply_text(caption, reply_markup=reply_markup, parse_mode='HTML', disable_web_page_preview=False)
+            
     except Exception as e:
-        await progress_msg.edit_text(f"? Music error: {str(e)[:200]}")
+        import traceback
+        print(f"Music error: {traceback.format_exc()}")
+        error_msg = f"❌ `Search Error: {str(e)[:100]}`"
+        if 'status_msg' in locals():
+            await status_msg.edit_text(error_msg)
+        else:
+            await update.message.reply_text(error_msg)
 
 # Video Tasks Persistence
 TASKS_FILE = "d:/clow bot/pending_tasks.json"
@@ -2726,11 +2728,11 @@ def remove_pending_task(task_id):
 async def continue_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Resume all uncompleted tasks from the pending_tasks.json file"""
     if str(update.effective_user.id) != str(ALLOWED_USER_ID):
-        await update.message.reply_text("? You are not authorized to use this command.")
+        await update.message.reply_text("❌ You are not authorized to use this command.")
         return
 
     if not os.path.exists(TASKS_FILE):
-        await update.message.reply_text("? No pending tasks found.")
+        await update.message.reply_text("✅ No pending tasks found.")
         return
 
     try:
@@ -2738,10 +2740,10 @@ async def continue_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE):
             tasks = json.load(f)
         
         if not tasks:
-            await update.message.reply_text("? No pending tasks to resume.")
+            await update.message.reply_text("✅ No pending tasks to resume.")
             return
 
-        await update.message.reply_text(f"?? Resuming **{len(tasks)}** pending tasks... ?", parse_mode='HTML')
+        await update.message.reply_text(f"🔄 Resuming **{len(tasks)}** pending tasks... ⏳", parse_mode='HTML')
         
         for task in tasks:
             # Create a mock update/context to re-run the downloader
@@ -2752,7 +2754,7 @@ async def continue_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE):
             asyncio.create_task(process_resumed_task(update, context, task))
             
     except Exception as e:
-        await update.message.reply_text(f"? Error resuming tasks: {e}")
+        await update.message.reply_text(f"❌ Error resuming tasks: {e}")
 
 async def process_resumed_task(update, context, task):
     """Helper to process a single resumed task"""
@@ -2824,11 +2826,11 @@ async def send_large_file(update, context, file_path, caption):
                 return True
     else:
         # File is too large, need to split
-        await update.message.reply_text(f"?? <b>File is large ({file_size_mb/1024:.2f} GB).</b>\nEinstein is splitting it into parts for you...", parse_mode='HTML')
+        await update.message.reply_text(f"📦 <b>File is large ({file_size_mb/1024:.2f} GB).</b>\nEinstein is splitting it into parts for you...", parse_mode='HTML')
         chunks = split_file(file_path, MAX_SIZE_MB)
         
         for i, chunk in enumerate(chunks):
-            part_caption = f"{caption}\n\n?? <b>Part {i+1} of {len(chunks)}</b>"
+            part_caption = f"{caption}\n\n📦 <b>Part {i+1} of {len(chunks)}</b>"
             with open(chunk, 'rb') as f:
                 await update.message.reply_document(
                     document=f,
@@ -2851,7 +2853,7 @@ async def video_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, r
         task_id = resumed_task.get('id')
     else:
         if not context.args:
-            await update.message.reply_text("?? **Einstein Universal Video Downloader**\n?????????????????????\nSend me any video URL and I will download it for you.\n\n? *Only the exact video linked will be processed.*", parse_mode='HTML')
+            await update.message.reply_text("📹 **Einstein Universal Video Downloader**\n━━━━━━━━━━━━━━━━━━━━━\nSend me any video URL and I will download it for you.\n\n✨ *Only the exact video linked will be processed.*", parse_mode='HTML')
             return
         url = context.args[0]
         is_hq = False
@@ -2860,7 +2862,7 @@ async def video_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, r
         task_id = save_pending_task(update.effective_chat.id, update.effective_user.id, "/video", url, is_hq)
 
     if not url or not url.startswith(('http://', 'https://')):
-        if not resumed_task: await update.message.reply_text("? Please provide a valid URL.")
+        if not resumed_task: await update.message.reply_text("❌ Please provide a valid URL.")
         return
 
     download_dir = "d:/clow bot/downloads"
@@ -2870,12 +2872,12 @@ async def video_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, r
     
     try:
         # Animated status update for better UX
-        status_msg = await update.message.reply_text("?? `Einstein System: Initializing media extraction...` ??", parse_mode='HTML')
+        status_msg = await update.message.reply_text("🧬 `Einstein System: Initializing media extraction...` 🧠", parse_mode='HTML')
         
         animations = [
-            "?? `Connecting to server...` ??",
-            "?? `Analyzing metadata...` ??",
-            "? `Optimizing download path...` ??"
+            "📡 `Connecting to server...` ⚛️",
+            "🔍 `Analyzing metadata...` 🔬",
+            "⚡ `Optimizing download path...` 🚀"
         ]
         
         for anim in animations:
@@ -2886,7 +2888,7 @@ async def video_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, r
         
         # Professional yt-dlp options enforcing single video with ultra-fast speed optimization
         ydl_opts = {
-            'format': 'best[ext=mp4]/best',
+            'format': 'best',
             'outtmpl': f'{task_subdir}/%(id)s_%(timestamp)s.%(ext)s',
             'noplaylist': True,
             'playlist_items': '1',
@@ -2896,24 +2898,13 @@ async def video_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, r
             'nothreads': 16,
             'buffersize': 1024 * 1024,
             'http_chunk_size': 1024 * 1024,
-            'headers': {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-            },
-            'extractor_args': {
-                'youtube': {
-                    'player_client': ['web', 'android'],
-                    'player_skip': ['webpage', 'configs', 'js'],
-                },
-                'tiktok': {
-                    'app_version': '20.1.1',
-                    'manifest_app_name': 'aweme',
-                }
-            }
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
         }
         
         # Site-specific optimizations
         if 'faphouse.com' in url:
-            print("?? FapHouse detected - finding the main video...")
+            print("🎯 FapHouse detected - finding the main video...")
             ydl_opts_analysis = {'quiet': True, 'extract_flat': 'in_playlist', 'playlistend': 50}
             with yt_dlp.YoutubeDL(ydl_opts_analysis) as ydl_analysis:
                 try:
@@ -2931,9 +2922,9 @@ async def video_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, r
                             if valid_entries:
                                 valid_entries.sort(key=lambda x: x.get('duration', 0) or 0, reverse=True)
                                 url = valid_entries[0].get('url', url)
-                                print(f"?? Selected main video: {url}")
+                                print(f"🎬 Selected main video: {url}")
                 except Exception as analysis_err:
-                    print(f"?? Analysis error: {analysis_err}")
+                    print(f"⚠️ Analysis error: {analysis_err}")
         
         # Terabox Mirror Transformation
         terabox_mirrors = ['teraboxshare.com', '1024tera.com', 'nephobox.com', '4funbox.com', 'mirrobox.com', 'momotera.com', 'teraboxapp.com', 'terabox.app', 'tibabox.com', 'freeterabox.com', '1024terabox.com']
@@ -2944,7 +2935,7 @@ async def video_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, r
                     url = url.replace(m, 'terabox.com')
                     break
 
-        await status_msg.edit_text("?? `Downloading from source...` ?", parse_mode='HTML')
+        await status_msg.edit_text("📥 `Downloading from source...` ✨", parse_mode='HTML')
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             try:
@@ -2965,16 +2956,16 @@ async def video_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, r
                         # Pick the largest file in the task directory as the most likely candidate
                         full_paths = [os.path.join(task_subdir, f) for f in files]
                         filename = max(full_paths, key=os.path.getsize)
-                        print(f"?? Fallback found file: {filename}")
+                        print(f"🧩 Fallback found file: {filename}")
             
             if filename and os.path.exists(filename):
                 file_size_mb = os.path.getsize(filename) / (1024 * 1024)
-                await status_msg.edit_text(f"? <b>Downloaded!</b> ({file_size_mb:.2f} MB)\n?? <b>Uploading to Telegram...</b>", parse_mode='HTML')
+                await status_msg.edit_text(f"✅ <b>Downloaded!</b> ({file_size_mb:.2f} MB)\n📤 <b>Uploading to Telegram...</b>", parse_mode='HTML')
                 
                 title = info.get('title', 'Video')
                 # Use robust HTML escaping for title
                 safe_title = escape_html(title)
-                caption = f"?? <b>{safe_title[:100]}</b>\n?????????????????????\n????? <i>Einstein Optimization Active</i>\n?? @alberteinstein247_bot"
+                caption = f"🎬 <b>{safe_title[:100]}</b>\n━━━━━━━━━━━━━━━━━━━━━\n👨‍🔬 <i>Einstein Optimization Active</i>\n📥 @alberteinstein247_bot"
                 
                 # Use send_large_file to handle files of any size (up to 30GB+)
                 await send_large_file(update, context, filename, caption)
@@ -2982,7 +2973,7 @@ async def video_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, r
                 if task_id: remove_pending_task(task_id)
                 await status_msg.delete()
             else:
-                await status_msg.edit_text("? <b>Einstein Error:</b> Media not found after processing.", parse_mode='HTML')
+                await status_msg.edit_text("❌ <b>Einstein Error:</b> Media not found after processing.", parse_mode='HTML')
                 
     except Exception as e:
         if task_id: remove_pending_task(task_id)
@@ -2991,14 +2982,14 @@ async def video_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, r
         print(f"Downloader Error Detail:\n{error_detail}")
         error_str = str(e)
         if "ReadError" in error_str or "timeout" in error_str.lower():
-            friendly_error = "?? Network connection unstable. Einstein is retrying..."
+            friendly_error = "📡 Network connection unstable. Einstein is retrying..."
         else:
             friendly_error = f"Download failed: {escape_html(error_str[:100])}"
             
         if 'status_msg' in locals(): 
-            await status_msg.edit_text(f"? <b>{friendly_error}</b>", parse_mode='HTML')
+            await status_msg.edit_text(f"❌ <b>{friendly_error}</b>", parse_mode='HTML')
         else:
-            await update.message.reply_text(f"? <b>{friendly_error}</b>", parse_mode='HTML')
+            await update.message.reply_text(f"❌ <b>{friendly_error}</b>", parse_mode='HTML')
     finally:
         if os.path.exists(task_subdir): shutil.rmtree(task_subdir)
 async def universal_file_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, url: str):
@@ -3010,13 +3001,13 @@ async def universal_file_downloader(update: Update, context: ContextTypes.DEFAUL
     task_subdir = os.path.join(download_dir, str(uuid.uuid4())[:8])
     os.makedirs(task_subdir, exist_ok=True)
     
-    status_msg = await update.message.reply_text("?? `Einstein System: Initializing secure file transfer...` ??", parse_mode='HTML')
+    status_msg = await update.message.reply_text("🧬 `Einstein System: Initializing secure file transfer...` 🧠", parse_mode='HTML')
     
     try:
         animations = [
-            "?? `Establishing uplink...` ??",
-            "??? `Verifying data integrity...` ??",
-            "?? `Acquiring packet fragments...` ?"
+            "📡 `Establishing uplink...` ⚛️",
+            "🛡️ `Verifying data integrity...` 🔬",
+            "📥 `Acquiring packet fragments...` ✨"
         ]
         
         for anim in animations:
@@ -3060,22 +3051,22 @@ async def universal_file_downloader(update: Update, context: ContextTypes.DEFAUL
         
         if os.path.exists(file_path):
             file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
-            await status_msg.edit_text(f"? <b>Transfer Complete!</b> ({file_size_mb:.2f} MB)\n?? <b>Uploading to Terminal...</b>", parse_mode='HTML')
+            await status_msg.edit_text(f"✅ <b>Transfer Complete!</b> ({file_size_mb:.2f} MB)\n📤 <b>Uploading to Terminal...</b>", parse_mode='HTML')
             
             # Use robust HTML escaping for filename
             safe_filename = escape_html(filename)
-            caption = f"?? <b>File:</b> <code>{safe_filename}</code>\n?????????????????????\n????? <i>Einstein Optimization Active</i>\n?? @alberteinstein247_bot"
+            caption = f"📄 <b>File:</b> <code>{safe_filename}</code>\n━━━━━━━━━━━━━━━━━━━━━\n👨‍🔬 <i>Einstein Optimization Active</i>\n📥 @alberteinstein247_bot"
             
             # Use send_large_file to handle files of any size
             await send_large_file(update, context, file_path, caption)
             
             await status_msg.delete()
         else:
-            await status_msg.edit_text("<b>? Einstein Error:</b> File vanished during transfer.", parse_mode='HTML')
+            await status_msg.edit_text("<b>❌ Einstein Error:</b> File vanished during transfer.", parse_mode='HTML')
             
     except Exception as e:
         print(f"Universal Downloader Error: {e}")
-        await status_msg.edit_text(f"<b>? Transfer Failed:</b> {escape_html(str(e)[:100])}", parse_mode='HTML')
+        await status_msg.edit_text(f"<b>❌ Transfer Failed:</b> {escape_html(str(e)[:100])}", parse_mode='HTML')
     finally:
         if os.path.exists(task_subdir):
             shutil.rmtree(task_subdir)
@@ -3086,34 +3077,34 @@ async def play_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if not context.args:
         await update.message.reply_text(
-            "?? **Instant Video Player**\n"
-            "?????????????????????\n"
+            "▶️ **Instant Video Player**\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
             "Play videos directly from ANY platform without downloading!\n\n"
-            "**?? Social Media:**\n"
+            "**📺 Social Media:**\n"
             "YouTube, Facebook, Instagram Reels/Stories, TikTok (No Watermark)\n"
             "Twitter/X, Reddit, Pinterest, LinkedIn\n\n"
-            "**?? Video Sites:**\n"
+            "**🎬 Video Sites:**\n"
             "Vimeo, Dailymotion, Twitch, SoundCloud, Rumble\n\n"
-            "**?? Cloud Storage:**\n"
+            "**☁️ Cloud Storage:**\n"
             "Terabox, Diskwala, Mega.nz, MediaFire, Google Drive\n"
             "Dropbox, Box, OneDrive\n\n"
-            "**?? File Sharing:**\n"
+            "**📦 File Sharing:**\n"
             "Zippyshare, Racaty, KrakenFiles, WeTransfer, File.io\n\n"
-            "**?? Adult Sites:**\n"
+            "**🔞 Adult Sites:**\n"
             "Pornhub, Xvideos, Xhamster, FapHouse, SpankBang, RedTube, YouPorn, etc.\n\n"
-            "**?? Direct Links:**\n"
+            "**💾 Direct Links:**\n"
             "MP4, WebM, MKV, MOV, AVI - Any direct video URL\n\n"
-            "**?? Usage:**\n"
-            "� `/play [URL]` - Stream video instantly (no download)\n"
-            "� `/stream [URL]` - Same as /play\n\n"
+            "**🚀 Usage:**\n"
+            "• `/play [URL]` - Stream video instantly (no download)\n"
+            "• `/stream [URL]` - Same as /play\n\n"
             "**Examples:**\n"
-            "� `/play https://youtube.com/watch?v=...`\n"
-            "� `/play https://pornhub.com/...`\n"
-            "� `/play https://terabox.com/...`\n"
-            "� `/play https://tiktok.com/...`\n"
-            "� `/play https://instagram.com/reel/...`\n\n"
-            "? *Instant streaming - no wait time!*\n"
-            "? *\"Simplicity is the ultimate sophistication.\"*",
+            "• `/play https://youtube.com/watch?v=...`\n"
+            "• `/play https://pornhub.com/...`\n"
+            "• `/play https://terabox.com/...`\n"
+            "• `/play https://tiktok.com/...`\n"
+            "• `/play https://instagram.com/reel/...`\n\n"
+            "⚡ *Instant streaming - no wait time!*\n"
+            "✨ *\"Simplicity is the ultimate sophistication.\"*",
             parse_mode='HTML'
         )
         return
@@ -3121,10 +3112,10 @@ async def play_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     url = context.args[0]
     
     if not url.startswith(('http://', 'https://')):
-        await update.message.reply_text("? Please provide a valid URL starting with http:// or https://")
+        await update.message.reply_text("❌ Please provide a valid URL starting with http:// or https://")
         return
     
-    progress_msg = await update.message.reply_text("? `Extracting video for streaming...` ??", parse_mode='HTML')
+    progress_msg = await update.message.reply_text("⏳ `Extracting video for streaming...` 🎬", parse_mode='HTML')
     
     try:
         # Extract direct video URL using yt-dlp
@@ -3140,7 +3131,7 @@ async def play_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
             info = ydl.extract_info(url, download=False)
             
             if not info:
-                await progress_msg.edit_text("? Could not extract video information.")
+                await progress_msg.edit_text("❌ Could not extract video information.")
                 return
             
             # Get video details
@@ -3164,20 +3155,20 @@ async def play_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     video_url = info['formats'][-1].get('url')
             
             if not video_url:
-                await progress_msg.edit_text("? Could not extract video stream URL.\n\nTry `/video [URL]` to download instead.")
+                await progress_msg.edit_text("❌ Could not extract video stream URL.\n\nTry `/video [URL]` to download instead.")
                 return
             
-            await progress_msg.edit_text(f"?? `Streaming:` **{title[:50]}** ??", parse_mode='HTML')
+            await progress_msg.edit_text(f"▶️ `Streaming:` **{title[:50]}** 🎬", parse_mode='HTML')
             
             # Send video for streaming
             try:
                 await update.message.reply_video(
                     video=video_url,  # Direct streaming URL
                     caption=(
-                        f"?? **{title[:100]}**\n"
-                        f"?? Duration: `{duration//60}:{duration%60:02d}`\n\n"
-                        f"? *Instant Stream - No Download Required*\n"
-                        f"?? @alberteinstein247_bot"
+                        f"🎬 **{title[:100]}**\n"
+                        f"⏱️ Duration: `{duration//60}:{duration%60:02d}`\n\n"
+                        f"⚡ *Instant Stream - No Download Required*\n"
+                        f"📥 @alberteinstein247_bot"
                     ),
                     supports_streaming=True,
                     parse_mode='HTML',
@@ -3193,7 +3184,7 @@ async def play_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 # If streaming fails (like Entity Too Large), suggest downloading
                 if "Request Entity Too Large" in str(stream_error) or "413" in str(stream_error):
                     await progress_msg.edit_text(
-                        f"?? **File Too Large for Direct Stream**\n\n"
+                        f"⚠️ **File Too Large for Direct Stream**\n\n"
                         f"Telegram limits direct URL streaming for very large files.\n"
                         f"Try downloading it instead:\n"
                         f"`/video {url}`",
@@ -3201,7 +3192,7 @@ async def play_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     )
                 else:
                     await progress_msg.edit_text(
-                        f"?? **Stream Error**\n\n"
+                        f"⚠️ **Stream Error**\n\n"
                         f"Direct streaming failed. Try downloading instead:\n"
                         f"`/video {url}`",
                         parse_mode='HTML'
@@ -3211,21 +3202,21 @@ async def play_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
         error_msg = str(e)
         if "Unsupported URL" in error_msg:
             await progress_msg.edit_text(
-                "? **Unsupported URL**\n\n"
+                "❌ **Unsupported URL**\n\n"
                 "This platform is not supported for streaming.\n\n"
                 "Try `/video [URL]` to download instead."
             )
         else:
-            await progress_msg.edit_text(f"? Error: {error_msg[:200]}\n\nTry `/video [URL]` to download.")
+            await progress_msg.edit_text(f"❌ Error: {error_msg[:200]}\n\nTry `/video [URL]` to download.")
     except Exception as e:
         print(f"Play error: {e}")
-        await progress_msg.edit_text(f"? Error: {str(e)[:200]}\n\nTry `/video [URL]` to download instead.")
+        await progress_msg.edit_text(f"❌ Error: {str(e)[:200]}\n\nTry `/video [URL]` to download instead.")
 
 async def utilities_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Utility tools - QR, password, short URL, etc."""
     if not context.args:
         await update.message.reply_text(
-            "??? Utilities\n\n"
+            "🛠️ Utilities\n\n"
             "Commands:\n"
             "/utils qr [text] - Generate QR code\n"
             "/utils password [length] - Generate password\n"
@@ -3252,7 +3243,7 @@ async def utilities_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
             qr_path = f"d:/clow bot/qr_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
             img.save(qr_path)
             
-            await update.message.reply_photo(open(qr_path, 'rb'), caption=f"?? QR Code for: {text[:50]}")
+            await update.message.reply_photo(open(qr_path, 'rb'), caption=f"📱 QR Code for: {text[:50]}")
             os.remove(qr_path)
             
         elif action == "password":
@@ -3260,22 +3251,22 @@ async def utilities_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
             import string
             length = int(context.args[1]) if len(context.args) > 1 else 12
             password = ''.join(random.choices(string.ascii_letters + string.digits + string.punctuation, k=length))
-            await update.message.reply_text(f"?? Generated Password:\n`{password}`", parse_mode='HTML')
+            await update.message.reply_text(f"🔐 Generated Password:\n`{password}`", parse_mode='HTML')
             
         elif action == "short" and len(context.args) >= 2:
             url = context.args[1]
             # Using TinyURL API
             short_url = requests.get(f"http://tinyurl.com/api-create.php?url={url}").text
-            await update.message.reply_text(f"?? Short URL:\n{short_url}")
+            await update.message.reply_text(f"🔗 Short URL:\n{short_url}")
             
         elif action == "news":
             # Using NewsAPI or RSS
             await update.message.reply_text(
-                "?? Latest News:\n\n"
+                "📰 Latest News:\n\n"
                 "1. Tech: AI breakthrough in 2026\n"
                 "2. World: Global climate summit\n"
                 "3. Sports: Champions League updates\n\n"
-                "?? Add NEWS_API_KEY for real news"
+                "⚠️ Add NEWS_API_KEY for real news"
             )
             
         elif action == "joke":
@@ -3298,28 +3289,28 @@ async def utilities_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text = " ".join(context.args[1:-2])
             target_lang = context.args[-1]
             await update.message.reply_text(
-                f"?? Translation Demo\n\n"
+                f"🌐 Translation Demo\n\n"
                 f"Original: {text}\n"
                 f"Target: {target_lang}\n\n"
-                f"?? Use /translate command for full translation"
+                f"⚠️ Use /translate command for full translation"
             )
             
         else:
-            await update.message.reply_text("??? Use /utils for available commands")
+            await update.message.reply_text("🛠️ Use /utils for available commands")
             
     except Exception as e:
-        await update.message.reply_text(f"? Utility error: {str(e)}")
+        await update.message.reply_text(f"❌ Utility error: {str(e)}")
 
 async def discord_webhook(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send message to all Discord channels by default, or specific if provided"""
     if not context.args and not os.getenv("DISCORD_WEBHOOK_URL"):
         await update.message.reply_text(
-            "?? **Einstein Discord Bridge**\n"
-            "?????????????????????\n"
+            "🧪 **Einstein Discord Bridge**\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
             "Usage:\n"
-            "� `/discord [message]` (sends to ALL channels in .env)\n"
-            "� `/discord [webhook_url] [message]` (specific channel)\n\n"
-            "????? *\"Everything is energy and that's all there is to it.\"*",
+            "• `/discord [message]` (sends to ALL channels in .env)\n"
+            "• `/discord [webhook_url] [message]` (specific channel)\n\n"
+            "👨‍🔬 *\"Everything is energy and that's all there is to it.\"*",
             parse_mode='HTML'
         )
         return
@@ -3335,11 +3326,11 @@ async def discord_webhook(update: Update, context: ContextTypes.DEFAULT_TYPE):
             webhook_urls = [url.strip() for url in webhooks_str.split(',') if url.strip()]
             message = " ".join(context.args)
         else:
-            await update.message.reply_text("? No webhook URLs found.")
+            await update.message.reply_text("❌ No webhook URLs found.")
             return
 
         if not message:
-            await update.message.reply_text("? Please provide a message to transmit.")
+            await update.message.reply_text("❌ Please provide a message to transmit.")
             return
         
         success_count = 0
@@ -3356,20 +3347,20 @@ async def discord_webhook(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 success_count += 1
         
         if total_count > 1:
-            await update.message.reply_text(f"? **Transmission Complete:** Sent to `{success_count}/{total_count}` channels.", parse_mode='HTML')
+            await update.message.reply_text(f"✅ **Transmission Complete:** Sent to `{success_count}/{total_count}` channels.", parse_mode='HTML')
         elif success_count == 1:
-            await update.message.reply_text("? **Frequency Matched:** Message sent to Discord.", parse_mode='HTML')
+            await update.message.reply_text("✅ **Frequency Matched:** Message sent to Discord.", parse_mode='HTML')
         else:
-            await update.message.reply_text("? Failed to send message to Discord.")
+            await update.message.reply_text("❌ Failed to send message to Discord.")
 
     except Exception as e:
-        await update.message.reply_text(f"? Discord error: {str(e)}")
+        await update.message.reply_text(f"❌ Discord error: {str(e)}")
 
 async def slack_webhook(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send message to Slack via webhook"""
     if not context.args:
         await update.message.reply_text(
-            "?? Slack Webhook\n\n"
+            "💼 Slack Webhook\n\n"
             "Usage:\n"
             "/slack [webhook_url] [message]\n\n"
             "Or add SLACK_WEBHOOK_URL to .env"
@@ -3381,18 +3372,18 @@ async def slack_webhook(update: Update, context: ContextTypes.DEFAULT_TYPE):
         message = " ".join(context.args[1:]) if os.getenv("SLACK_WEBHOOK_URL") else " ".join(context.args[1:])
         
         if not message:
-            await update.message.reply_text("? Please provide a message")
+            await update.message.reply_text("❌ Please provide a message")
             return
         
         data = {"text": message, "username": "OpenClowd Bot"}
         response = requests.post(webhook_url, json=data)
         
         if response.status_code == 200:
-            await update.message.reply_text("? Message sent to Slack")
+            await update.message.reply_text("✅ Message sent to Slack")
         else:
-            await update.message.reply_text(f"? Failed to send: {response.status_code}")
+            await update.message.reply_text(f"❌ Failed to send: {response.status_code}")
     except Exception as e:
-        await update.message.reply_text(f"? Slack error: {str(e)}")
+        await update.message.reply_text(f"❌ Slack error: {str(e)}")
 
 # ============== CALENDAR & TRAVEL FEATURES ==============
 
@@ -3402,7 +3393,7 @@ async def calendar_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if not context.args:
         await update.message.reply_text(
-            "?? Calendar Manager\n\n"
+            "📅 Calendar Manager\n\n"
             "Commands:\n"
             "/calendar add '[title]' [YYYY-MM-DD] [HH:MM] - Add event\n"
             "/calendar today - Today's events\n"
@@ -3450,19 +3441,19 @@ async def calendar_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
             with open(calendar_file, 'w', encoding='utf-8') as f:
                 json.dump(events, f, indent=2, ensure_ascii=False)
             
-            await update.message.reply_text(f"? Event added:\n?? {title}\n?? {date} at {time}")
+            await update.message.reply_text(f"✅ Event added:\n📅 {title}\n📆 {date} at {time}")
             
         elif action == "today":
             today = datetime.now().strftime('%Y-%m-%d')
             today_events = [e for e in events if e['date'] == today]
             
             if today_events:
-                msg = f"?? Today's Events ({today}):\n\n"
+                msg = f"📅 Today's Events ({today}):\n\n"
                 for e in today_events:
-                    msg += f"? {e['time']} - {e['title']}\n"
+                    msg += f"⏰ {e['time']} - {e['title']}\n"
                 await update.message.reply_text(msg)
             else:
-                await update.message.reply_text(f"?? No events for today ({today})")
+                await update.message.reply_text(f"📅 No events for today ({today})")
                 
         elif action == "week":
             # Show next 7 days
@@ -3472,21 +3463,21 @@ async def calendar_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
             week_events = [e for e in events if e['date'] in week_dates]
             
             if week_events:
-                msg = "?? This Week's Events:\n\n"
+                msg = "📅 This Week's Events:\n\n"
                 for e in sorted(week_events, key=lambda x: (x['date'], x['time'])):
-                    msg += f"?? {e['date']} ? {e['time']} - {e['title']}\n"
+                    msg += f"📆 {e['date']} ⏰ {e['time']} - {e['title']}\n"
                 await update.message.reply_text(msg[:4000])
             else:
-                await update.message.reply_text("?? No events this week")
+                await update.message.reply_text("📅 No events this week")
                 
         elif action == "list":
             if events:
-                msg = "?? All Events:\n\n"
+                msg = "📅 All Events:\n\n"
                 for e in sorted(events, key=lambda x: (x['date'], x['time'])):
-                    msg += f"#{e['id']} ?? {e['date']} ? {e['time']} - {e['title']}\n"
+                    msg += f"#{e['id']} 📆 {e['date']} ⏰ {e['time']} - {e['title']}\n"
                 await update.message.reply_text(msg[:4000])
             else:
-                await update.message.reply_text("?? No events scheduled")
+                await update.message.reply_text("📅 No events scheduled")
                 
         elif action == "delete" and len(context.args) >= 2:
             event_id = int(context.args[1])
@@ -3495,26 +3486,26 @@ async def calendar_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
             with open(calendar_file, 'w', encoding='utf-8') as f:
                 json.dump(events, f, indent=2, ensure_ascii=False)
             
-            await update.message.reply_text(f"??? Event #{event_id} deleted")
+            await update.message.reply_text(f"🗑️ Event #{event_id} deleted")
             
         elif action == "sync":
             await update.message.reply_text(
-                "?? Google Calendar Sync\n\n"
-                "?? Setup Required:\n"
+                "📅 Google Calendar Sync\n\n"
+                "⚠️ Setup Required:\n"
                 "1. Enable Google Calendar API\n"
                 "2. Add credentials to .env:\n"
                 "   GOOGLE_CLIENT_ID=xxx\n"
                 "   GOOGLE_CLIENT_SECRET=xxx\n\n"
                 "Features:\n"
-                "� ?? Import from Google Calendar\n"
-                "� ?? Export to Google Calendar\n"
-                "� ?? Two-way sync\n"
-                "� ?? Email notifications"
+                "• 📥 Import from Google Calendar\n"
+                "• 📤 Export to Google Calendar\n"
+                "• 🔄 Two-way sync\n"
+                "• 📧 Email notifications"
             )
             
         else:
             await update.message.reply_text(
-                "?? Calendar Manager\n\n"
+                "📅 Calendar Manager\n\n"
                 "/calendar add 'Title' YYYY-MM-DD HH:MM\n"
                 "/calendar today\n"
                 "/calendar week\n"
@@ -3523,13 +3514,13 @@ async def calendar_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "/calendar sync"
             )
     except Exception as e:
-        await update.message.reply_text(f"? Calendar error: {str(e)}")
+        await update.message.reply_text(f"❌ Calendar error: {str(e)}")
 
 async def flight_checkin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Flight check-in and travel management - OpenClaw feature"""
     if not context.args:
         await update.message.reply_text(
-            "?? Flight Check-in & Travel\n\n"
+            "✈️ Flight Check-in & Travel\n\n"
             "Commands:\n"
             "/flight status [flight number] - Check flight status\n"
             "/flight checkin [booking ref] - Auto check-in\n"
@@ -3546,27 +3537,27 @@ async def flight_checkin(update: Update, context: ContextTypes.DEFAULT_TYPE):
             flight_num = context.args[1].upper()
             # Demo flight status
             await update.message.reply_text(
-                f"?? Flight Status: {flight_num}\n\n"
-                f"?? Departure: New York (JFK)\n"
-                f"?? Arrival: London (LHR)\n"
-                f"?? Date: {datetime.now().strftime('%Y-%m-%d')}\n"
-                f"? Scheduled: 14:30\n"
-                f"?? Status: On Time\n\n"
-                f"?? Add AVIATION_API_KEY for real flight data\n"
+                f"✈️ Flight Status: {flight_num}\n\n"
+                f"🛫 Departure: New York (JFK)\n"
+                f"🛬 Arrival: London (LHR)\n"
+                f"📅 Date: {datetime.now().strftime('%Y-%m-%d')}\n"
+                f"⏰ Scheduled: 14:30\n"
+                f"🟢 Status: On Time\n\n"
+                f"⚠️ Add AVIATION_API_KEY for real flight data\n"
                 f"Get from: https://aviationstack.com"
             )
             
         elif action == "checkin":
             await update.message.reply_text(
-                "?? Auto Check-in\n\n"
-                "?? Setup Required:\n"
+                "✈️ Auto Check-in\n\n"
+                "⚠️ Setup Required:\n"
                 "This feature requires airline-specific APIs:\n\n"
                 "Supported Airlines:\n"
-                "� Delta\n"
-                "� United\n"
-                "� American Airlines\n"
-                "� British Airways\n"
-                "� Emirates\n\n"
+                "• Delta\n"
+                "• United\n"
+                "• American Airlines\n"
+                "• British Airways\n"
+                "• Emirates\n\n"
                 "Add airline credentials to .env for auto check-in"
             )
             
@@ -3576,45 +3567,45 @@ async def flight_checkin(update: Update, context: ContextTypes.DEFAULT_TYPE):
             date = context.args[3]
             
             await update.message.reply_text(
-                f"?? Flight Search\n\n"
-                f"Route: {from_city} ? {to_city}\n"
+                f"🔍 Flight Search\n\n"
+                f"Route: {from_city} → {to_city}\n"
                 f"Date: {date}\n\n"
                 f"Demo Results:\n"
-                f"1. ?? SQ305 - 08:30 - $850\n"
-                f"2. ?? BA117 - 12:15 - $720\n"
-                f"3. ?? AA101 - 16:45 - $680\n\n"
-                f"?? Add AMADEUS_API_KEY for real search\n"
+                f"1. ✈️ SQ305 - 08:30 - $850\n"
+                f"2. ✈️ BA117 - 12:15 - $720\n"
+                f"3. ✈️ AA101 - 16:45 - $680\n\n"
+                f"⚠️ Add AMADEUS_API_KEY for real search\n"
                 f"Get from: https://developers.amadeus.com"
             )
             
         elif action == "track" and len(context.args) >= 2:
             flight_num = context.args[1].upper()
             await update.message.reply_text(
-                f"?? Tracking: {flight_num}\n\n"
+                f"📍 Tracking: {flight_num}\n\n"
                 f"Current Position:\n"
-                f"?? Over Atlantic Ocean\n"
-                f"?? Time to arrival: 2h 15m\n"
-                f"?? Landing: London Heathrow\n"
+                f"📍 Over Atlantic Ocean\n"
+                f"⏱️ Time to arrival: 2h 15m\n"
+                f"🛬 Landing: London Heathrow\n"
                 f"Gate: TBA\n\n"
-                f"?? Add real-time tracking API for live updates"
+                f"⚠️ Add real-time tracking API for live updates"
             )
             
         else:
             await update.message.reply_text(
-                "?? Flight Check-in & Travel\n\n"
+                "✈️ Flight Check-in & Travel\n\n"
                 "/flight status [flight number]\n"
                 "/flight checkin [booking ref]\n"
                 "/flight search [from] [to] [date]\n"
                 "/flight track [flight number]"
             )
     except Exception as e:
-        await update.message.reply_text(f"? Flight error: {str(e)}")
+        await update.message.reply_text(f"❌ Flight error: {str(e)}")
 
 async def file_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Advanced file management - OpenClaw feature"""
     if not context.args:
         await update.message.reply_text(
-            "?? File Manager\n\n"
+            "📁 File Manager\n\n"
             "Commands:\n"
             "/file list [path] - List directory\n"
             "/file upload - Upload file (send document)\n"
@@ -3633,21 +3624,21 @@ async def file_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if action == "list":
             path = context.args[1] if len(context.args) > 1 else "d:/clow bot"
             files = os.listdir(path)
-            msg = f"?? {path}:\n\n"
+            msg = f"📁 {path}:\n\n"
             for i, f in enumerate(files[:50], 1):  # Limit to 50 files
                 full_path = os.path.join(path, f)
                 if os.path.isdir(full_path):
-                    msg += f"{i}. ?? {f}/\n"
+                    msg += f"{i}. 📂 {f}/\n"
                 else:
                     size = os.path.getsize(full_path)
-                    msg += f"{i}. ?? {f} ({size} bytes)\n"
+                    msg += f"{i}. 📄 {f} ({size} bytes)\n"
             await update.message.reply_text(msg[:4000])
             
         elif action == "download" and len(context.args) >= 3:
             url = context.args[1]
             filename = context.args[2]
             
-            await update.message.reply_text(f"?? Downloading: {filename}...")
+            await update.message.reply_text(f"⬇️ Downloading: {filename}...")
             
             response = requests.get(url, stream=True)
             filepath = f"d:/clow bot/{filename}"
@@ -3657,41 +3648,41 @@ async def file_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     f.write(chunk)
             
             file_size = os.path.getsize(filepath)
-            await update.message.reply_text(f"? Downloaded: {filename}\nSize: {file_size} bytes")
+            await update.message.reply_text(f"✅ Downloaded: {filename}\nSize: {file_size} bytes")
             
         elif action == "delete" and len(context.args) >= 2:
             path = " ".join(context.args[1:])
             if os.path.exists(path):
                 if os.path.isdir(path):
                     os.rmdir(path)
-                    await update.message.reply_text(f"??? Folder deleted: {path}")
+                    await update.message.reply_text(f"🗑️ Folder deleted: {path}")
                 else:
                     os.remove(path)
-                    await update.message.reply_text(f"??? File deleted: {path}")
+                    await update.message.reply_text(f"🗑️ File deleted: {path}")
             else:
-                await update.message.reply_text(f"? Path not found: {path}")
+                await update.message.reply_text(f"❌ Path not found: {path}")
                 
         elif action == "size" and len(context.args) >= 2:
             path = " ".join(context.args[1:])
             if os.path.exists(path):
                 size = os.path.getsize(path)
-                await update.message.reply_text(f"?? {path}:\nSize: {size} bytes ({size/1024:.2f} KB)")
+                await update.message.reply_text(f"📊 {path}:\nSize: {size} bytes ({size/1024:.2f} KB)")
             else:
-                await update.message.reply_text(f"? File not found: {path}")
+                await update.message.reply_text(f"❌ File not found: {path}")
                 
         elif action == "upload":
             await update.message.reply_text(
-                "?? Upload File\n\n"
+                "📤 Upload File\n\n"
                 "Send me any file/document and I'll save it to:\n"
                 "d:/clow bot/uploads/\n\n"
                 "Supported formats:\n"
-                "� Images, Videos, Documents\n"
-                "� Audio, Archives, Code files"
+                "• Images, Videos, Documents\n"
+                "• Audio, Archives, Code files"
             )
             
         else:
             await update.message.reply_text(
-                "?? File Manager\n\n"
+                "📁 File Manager\n\n"
                 "/file list [path]\n"
                 "/file download [url] [name]\n"
                 "/file delete [path]\n"
@@ -3699,13 +3690,13 @@ async def file_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "/file upload"
             )
     except Exception as e:
-        await update.message.reply_text(f"? File error: {str(e)}")
+        await update.message.reply_text(f"❌ File error: {str(e)}")
 
 async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle uploaded documents - File upload feature"""
     user_id = str(update.effective_user.id)
     if user_id != ALLOWED_USER_ID:
-        await update.message.reply_text("? Access Denied!")
+        await update.message.reply_text("❌ Access Denied!")
         return
     
     try:
@@ -3723,42 +3714,42 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         file_size = os.path.getsize(file_path)
         await update.message.reply_text(
-            f"? File Uploaded Successfully!\n\n"
-            f"?? Name: {file_name}\n"
-            f"?? Size: {file_size} bytes\n"
-            f"?? Location: {file_path}"
+            f"✅ File Uploaded Successfully!\n\n"
+            f"📄 Name: {file_name}\n"
+            f"📊 Size: {file_size} bytes\n"
+            f"📁 Location: {file_path}"
         )
     except Exception as e:
-        await update.message.reply_text(f"? Upload error: {str(e)}")
+        await update.message.reply_text(f"❌ Upload error: {str(e)}")
 
 async def whatsapp_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """WhatsApp Business API integration - OpenClaw feature"""
     await update.message.reply_text(
-        "?? WhatsApp Business Integration\n\n"
-        "?? Setup Required:\n"
+        "💬 WhatsApp Business Integration\n\n"
+        "⚠️ Setup Required:\n"
         "1. WhatsApp Business Account\n"
         "2. Meta Developer Account\n"
         "3. Add to .env:\n"
         "   WHATSAPP_TOKEN=xxx\n"
         "   WHATSAPP_PHONE_ID=xxx\n\n"
         "Features:\n"
-        "� ?? Send WhatsApp messages\n"
-        "� ?? Receive WhatsApp messages\n"
-        "� ?? Send media/files\n"
-        "� ?? Auto-reply bot\n"
-        "� ?? Message analytics"
+        "• 📤 Send WhatsApp messages\n"
+        "• 📥 Receive WhatsApp messages\n"
+        "• 📎 Send media/files\n"
+        "• 🤖 Auto-reply bot\n"
+        "• 📊 Message analytics"
     )
 
 async def claude_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Claude AI integration - Alternative to OpenAI"""
     if not context.args:
         await update.message.reply_text(
-            "?? Claude AI Assistant\n\n"
+            "🧠 Claude AI Assistant\n\n"
             "Usage: /claude [your question]\n\n"
             "Example:\n"
             "/claude Write a Python script\n"
             "/claude Explain machine learning\n\n"
-            "?? Add ANTHROPIC_API_KEY to .env\n"
+            "⚠️ Add ANTHROPIC_API_KEY to .env\n"
             "Get from: https://console.anthropic.com"
         )
         return
@@ -3768,9 +3759,9 @@ async def claude_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if not api_key:
         await update.message.reply_text(
-            "?? Claude AI (Demo Mode)\n\n"
+            "🧠 Claude AI (Demo Mode)\n\n"
             f"You asked: {message}\n\n"
-            "?? Demo Response:\n"
+            "📝 Demo Response:\n"
             "This is a demonstration of Claude AI integration.\n\n"
             "For full Claude AI responses, add:\n"
             "ANTHROPIC_API_KEY=your_key_here\n\n"
@@ -3780,7 +3771,7 @@ async def claude_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     try:
-        await update.message.reply_text("?? Thinking with Claude...")
+        await update.message.reply_text("🧠 Thinking with Claude...")
         
         headers = {
             "x-api-key": api_key,
@@ -3803,23 +3794,23 @@ async def claude_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if response.status_code == 200:
             result = response.json()
             answer = result['content'][0]['text']
-            await update.message.reply_text(f"?? Claude:\n\n{answer[:4000]}")
+            await update.message.reply_text(f"🧠 Claude:\n\n{answer[:4000]}")
         else:
-            await update.message.reply_text(f"? Claude API error: {response.status_code}")
+            await update.message.reply_text(f"❌ Claude API error: {response.status_code}")
     except Exception as e:
-        await update.message.reply_text(f"? Claude error: {str(e)}")
+        await update.message.reply_text(f"❌ Claude error: {str(e)}")
 
 async def ollama_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Ollama local AI chat - Free alternative to OpenAI"""
     if not context.args:
         await update.message.reply_text(
-            "?? Ollama Local AI\n\n"
+            "🦙 Ollama Local AI\n\n"
             "Usage: /ollama [your question]\n\n"
             "Example:\n"
             "/ollama Write a Python script\n"
             "/ollama Explain machine learning\n\n"
-            "? Free local AI - No API key needed!\n"
-            "?? Model: llama3.2 (downloading...)"
+            "✅ Free local AI - No API key needed!\n"
+            "📦 Model: llama3.2 (downloading...)"
         )
         return
     
@@ -3851,10 +3842,10 @@ async def handle_media(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Stylish response start
         await update.message.reply_text(
-            f"????? **Einstein Analysis**\n"
-            f"???????????????\n"
-            f"?? `Examining {media_type}...`\n"
-            f"?? *Looking for details*",
+            f"👨‍🔬 **Einstein Analysis**\n"
+            f"━━━━━━━━━━━━━━━\n"
+            f"🔍 `Examining {media_type}...`\n"
+            f"🧠 *Looking for details*",
             parse_mode='HTML'
         )
 
@@ -3879,26 +3870,26 @@ async def handle_media(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if response.status_code == 200:
             result = response.json()
             answer = result.get("response", "I see it, but words fail me.")
-            await update.message.reply_text(f"????? **Einstein's Observation:**\n\n{answer}")
+            await update.message.reply_text(f"👨‍🔬 **Einstein's Observation:**\n\n{answer}")
         else:
-            await update.message.reply_text("????? *Interesting... but my calculations are currently blocked.*")
+            await update.message.reply_text("👨‍🔬 *Interesting... but my calculations are currently blocked.*")
 
         # Cleanup
         os.remove(file_path)
 
     except Exception as e:
         print(f"Media analysis error: {e}")
-        await update.message.reply_text("????? *A scientific anomaly occurred during analysis.*")
+        await update.message.reply_text("👨‍🔬 *A scientific anomaly occurred during analysis.*")
 
 async def ai_command_processor(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """AI Smart Command Processor - Natural language command execution"""
     if not context.args:
         await update.message.reply_text(
-            "?? **Einstein AI Smart Processor**\n"
-            "?????????????????????\n"
+            "🧠 **Einstein AI Smart Processor**\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
             "Usage: `/smart [your request in natural language]`\n"
             "Example: `/smart take a screenshot and send it to me`\n\n"
-            "????? *\"Everything should be made as simple as possible, but not simpler.\"*",
+            "👨‍🔬 *\"Everything should be made as simple as possible, but not simpler.\"*",
             parse_mode='HTML'
         )
         return
@@ -3907,7 +3898,7 @@ async def ai_command_processor(update: Update, context: ContextTypes.DEFAULT_TYP
     user_id = str(update.effective_user.id)
     lang = user_languages.get(user_id, 'en')
     
-    await update.message.reply_text(f"?? `Einstein is analyzing your request...` ??")
+    await update.message.reply_text(f"🧠 `Einstein is analyzing your request...` 🧪")
     
     # Send to Ollama to interpret the command
     prompt = f"You are a command processor. The user said: '{query}'. Based on this, which bot command should be run? Available commands: screenshot, weather, search, files, status, help, start. Reply with ONLY the command name, no other text."
@@ -3931,7 +3922,7 @@ async def ai_command_processor(update: Update, context: ContextTypes.DEFAULT_TYP
             elif 'weather' in command:
                 await get_weather(update)
             elif 'search' in command:
-                await update.message.reply_text("?? Please use /search [query] for web searching.")
+                await update.message.reply_text("🔍 Please use /search [query] for web searching.")
             elif 'files' in command:
                 await list_files(update, context)
             elif 'status' in command:
@@ -3957,24 +3948,24 @@ async def ollama_reply(update: Update, message: str, context: ContextTypes.DEFAU
         
         # Animated Einstein Thinking - Optimized for professional feel
         thinking_text = get_text('thinking', lang)
-        status_msg = await update.message.reply_text(f"?? `Einstein System: {thinking_text}` ??")
+        status_msg = await update.message.reply_text(f"🧬 `Einstein System: {thinking_text}` 🧠")
         
         # Multi-language system prompt - Academic Excellence (All Subjects)
         system_prompts = {
             'en': "You are Albert Einstein, a universal genius. Your goal is to solve ANY academic problem or question provided by the user, including Mathematics, Physics, Chemistry, Biology, History, Geography, and all other subjects. Provide clear, step-by-step solutions and expert explanations. Reply in English.",
-            'bn': "???? ??????? ?????????, ???? ????????? ???????? ????? ?????? ??? ???????????? ????? ?????? ?????????? ?????? ?? ???????? ?????? ???, ??? ????? ????, ?????????????, ??????, ??????????, ??????, ????? ??? ???????? ??? ???? ???????????? ????????, ???? ???? ?????? ??? ?????????? ???????? ?????? ????? ????? ?????? ????? ????",
-            'hi': "?? ??????? ???????? ???, ?? ?????????? ???????? ???? ?????? ?????????? ?????? ?????? ?? ?? ???? ?? ???????? ?????? ?? ?????? ?? ?? ???? ??, ?????? ????, ??????, ????? ???????, ??? ???????, ??????, ????? ?? ???? ??? ???? ????? ???? ??????, ???-??-??? ?????? ?? ???????? ?????????? ?????? ????? ????? ??? ????? ????",
-            'es': "Eres Albert Einstein, un genio universal. Tu objetivo es resolver CUALQUIER problema o pregunta acad�mica proporcionada por el usuario, incluyendo Matem�ticas, F�sica, Qu�mica, Biolog�a, Historia, Geograf�a y todas las dem�s materias. Proporciona soluciones claras paso a paso y explicaciones expertas. Responde en espa�ol.",
-            'ar': "??? ????? ????????? ????? ?????. ???? ?? ?? ?? ????? ?? ???? ??????? ????? ????????? ??? ?? ??? ????????? ????????? ????????? ???????? ???????? ?????????? ????? ?????? ??????. ??? ?????? ????? ???? ????? ???????? ?????. ?? ?????? ???????.",
-            'zh': "??????�????,?????????????????????????????,?????????????????????????????????????????????????????"
+            'bn': "আপনি আলবার্ট আইনস্টাইন, একজন বিশ্বজনীন প্রতিভা। আপনার লক্ষ্য হলো ব্যবহারকারীর দেওয়া যেকোনো শিক্ষামূলক সমস্যা বা প্রশ্নের সমাধান করা, যার মধ্যে গণিত, পদার্থবিজ্ঞান, রসায়ন, জীববিজ্ঞান, ইতিহাস, ভূগোল এবং অন্যান্য সকল বিষয় অন্তর্ভুক্ত। পরিষ্কার, ধাপে ধাপে সমাধান এবং বিশেষজ্ঞের ব্যাখ্যা প্রদান করুন। বাংলা ভাষায় উত্তর দিন।",
+            'hi': "आप अल्बर्ट आइंस्टीन हैं, एक सार्वभौमिक प्रतिभा। आपका लक्ष्य उपयोगकर्ता द्वारा प्रदान की गई किसी भी शैक्षणिक समस्या या प्रश्न को हल करना है, जिसमें गणित, भौतिकी, रसायन विज्ञान, जीव विज्ञान, इतिहास, भूगोल और अन्य सभी विषय शामिल हैं। स्पष्ट, चरण-दर-चरण समाधान और विशेषज्ञ स्पष्टीकरण प्रदान करें। हिंदी में उत्तर दें।",
+            'es': "Eres Albert Einstein, un genio universal. Tu objetivo es resolver CUALQUIER problema o pregunta académica proporcionada por el usuario, incluyendo Matemáticas, Física, Química, Biología, Historia, Geografía y todas las demás materias. Proporciona soluciones claras paso a paso y explicaciones expertas. Responde en español.",
+            'ar': "أنت ألبرت أينشتاين، عبقري عالمي. هدفك هو حل أي مشكلة أو سؤال أكاديمي يقدمه المستخدم، بما في ذلك الرياضيات والفيزياء والكيمياء والأحياء والتاريخ والجغرافيا وجميع المواد الأخرى. قدم حلولاً واضحة خطوة بخطوة وتفسيرات خبراء. رد باللغة العربية.",
+            'zh': "你是阿尔伯特·爱因斯坦，一位全才的天才。你的目标是解决用户提供的任何学术问题或疑问，包括数学、物理、化学、生物、历史、地理和所有其他学科。提供清晰、循序渐进的解决方案和专家解释。用中文回答。"
         }
         system_prompt = system_prompts.get(lang, system_prompts['en'])
         full_prompt = f"{system_prompt}\n\nUser: {message}\nEinstein:"
 
         animations = [
-            "?? `Accessing knowledge base...` ??",
-            "? `Formulating response...` ??",
-            "?? `Finalizing scientific theory...` ??"
+            "🧠 `Accessing knowledge base...` 📚",
+            "✨ `Formulating response...` ⚛️",
+            "🧩 `Finalizing scientific theory...` 🔬"
         ]
         
         for anim in animations:
@@ -4006,36 +3997,36 @@ async def ollama_reply(update: Update, message: str, context: ContextTypes.DEFAU
             
             # Final Professional Styled Reply in HTML
             attractive_reply = (
-                f"?? <b>Einstein System Output</b> ??\n"
-                f"?????????????????????\n\n"
+                f"🧬 <b>Einstein System Output</b> 🧬\n"
+                f"━━━━━━━━━━━━━━━━━━━━━\n\n"
                 f"{escaped_answer}\n\n"
-                f"?????????????????????\n"
-                f"????? <i>\"Creativity is intelligence having fun.\"</i>\n"
-                f"?? @alberteinstein247_bot"
+                f"━━━━━━━━━━━━━━━━━━━━━\n"
+                f"👨‍🔬 <i>\"Creativity is intelligence having fun.\"</i>\n"
+                f"📥 @alberteinstein247_bot"
             )
             
             await status_msg.edit_text(attractive_reply, parse_mode='HTML')
         else:
-            await status_msg.edit_text("? `Einstein Error: Local brain (Ollama) is offline.` ??")
+            await status_msg.edit_text("❌ `Einstein Error: Local brain (Ollama) is offline.` 🧠")
     except Exception as e:
         error_text = str(e)[:100]
         if 'status_msg' in locals():
-            await status_msg.edit_text(f"? `Anomaly detected: {error_text}`", parse_mode='HTML')
+            await status_msg.edit_text(f"❌ `Anomaly detected: {error_text}`", parse_mode='HTML')
         else:
-            await update.message.reply_text(f"? `Anomaly detected: {error_text}`", parse_mode='HTML')
+            await update.message.reply_text(f"❌ `Anomaly detected: {error_text}`", parse_mode='HTML')
 
 async def generate_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Generate images with stylish animated status"""
     if not context.args:
-        await update.message.reply_text("?? **Image Generator**\n\nUsage: `/gen [your prompt]`")
+        await update.message.reply_text("🎨 **Image Generator**\n\nUsage: `/gen [your prompt]`")
         return
     
     prompt = " ".join(context.args)
-    status_msg = await update.message.reply_text("?? `Einstein is sketching...` ???")
+    status_msg = await update.message.reply_text("🎨 `Einstein is sketching...` 🖌️")
     
     try:
         # Animated Progress
-        animations = ["?? `Assembling molecules...`", "? `Polishing light waves...`", "?? `Finalizing masterpiece...`"]
+        animations = ["🧩 `Assembling molecules...`", "✨ `Polishing light waves...`", "🌈 `Finalizing masterpiece...`"]
         for anim in animations:
             await status_msg.edit_text(anim, parse_mode='HTML')
             await asyncio.sleep(0.6)
@@ -4090,7 +4081,7 @@ async def generate_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
         with open(image_path, 'rb') as photo:
             await update.message.reply_photo(
                 photo=photo,
-                caption=f"?? **Masterpiece Created!**\n\n??? **Prompt:** `{prompt}`\n\n????? *\"Creativity is intelligence having fun.\"*",
+                caption=f"🎨 **Masterpiece Created!**\n\n🖼️ **Prompt:** `{prompt}`\n\n👨‍🔬 *\"Creativity is intelligence having fun.\"*",
                 parse_mode='HTML'
             )
 
@@ -4098,15 +4089,61 @@ async def generate_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
             os.remove(image_path)
         await status_msg.delete()
     except Exception as e:
-        await status_msg.edit_text(f"? `Artistic failure: {str(e)[:50]}`")
+        await status_msg.edit_text(f"❌ `Artistic failure: {str(e)[:50]}`")
+
+async def video_to_mp3(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Convert a video to MP3 audio (Reply to a video with /mp3)"""
+    if not update.message.reply_to_message or not (update.message.reply_to_message.video or update.message.reply_to_message.document):
+        await update.message.reply_text("🎵 **Reply to a video with `/mp3` to extract audio!**", parse_mode='HTML')
+        return
+    
+    status_msg = await update.message.reply_text("🧬 `Einstein OS: Initializing sonic extraction...` 🧪", parse_mode='HTML')
+    
+    try:
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.UPLOAD_VOICE)
+        
+        # Download the video
+        video_file = await (update.message.reply_to_message.video or update.message.reply_to_message.document).get_file()
+        download_dir = "d:/clow bot/downloads"
+        os.makedirs(download_dir, exist_ok=True)
+        
+        video_path = f"{download_dir}/temp_sonic_{update.message.message_id}.mp4"
+        mp3_path = video_path.replace('.mp4', '.mp3')
+        
+        await video_file.download_to_drive(video_path)
+        await status_msg.edit_text("⚡ `Processing frequency waves...` 🚀", parse_mode='HTML')
+        
+        import moviepy as mp
+        clip = mp.VideoFileClip(video_path)
+        clip.audio.write_audiofile(mp3_path)
+        clip.close()
+        
+        await status_msg.edit_text("✨ `Polishing audio output...` 🎵", parse_mode='HTML')
+        
+        with open(mp3_path, 'rb') as f:
+            await update.message.reply_audio(
+                audio=f, 
+                caption=f"🎵 **Audio Extracted Successfully**\n━━━━━━━━━━━━━━━━━━━━━\n👨‍🔬 *\"Everything is vibration.\"*",
+                parse_mode='HTML'
+            )
+        
+        # Cleanup
+        os.remove(video_path)
+        os.remove(mp3_path)
+        await status_msg.delete()
+        
+    except Exception as e:
+        import traceback
+        print(f"MP3 Conversion Error: {traceback.format_exc()}")
+        await status_msg.edit_text(f"❌ **Sonic Error:** `{str(e)[:100]}`", parse_mode='HTML')
 
 async def video_to_gif(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Convert a video to GIF (Reply to a video with /gif)"""
     if not update.message.reply_to_message or not (update.message.reply_to_message.video or update.message.reply_to_message.document):
-        await update.message.reply_text("??? Reply to a video with `/gif` to convert it!")
+        await update.message.reply_text("🎞️ Reply to a video with `/gif` to convert it!")
         return
     
-    msg = await update.message.reply_text("??? `Converting video to GIF... This may take a moment.`", parse_mode='HTML')
+    msg = await update.message.reply_text("🎞️ `Converting video to GIF... This may take a moment.`", parse_mode='HTML')
     
     try:
         # Download the video
@@ -4115,7 +4152,7 @@ async def video_to_gif(update: Update, context: ContextTypes.DEFAULT_TYPE):
         gif_path = video_path.replace('.mp4', '.gif')
         await video_file.download_to_drive(video_path)
         
-        import moviepy.editor as mp
+        import moviepy as mp
         clip = mp.VideoFileClip(video_path).resize(width=480) # Resize for smaller file size
         # Take first 10 seconds only for GIF to avoid huge files
         if clip.duration > 10:
@@ -4125,7 +4162,7 @@ async def video_to_gif(update: Update, context: ContextTypes.DEFAULT_TYPE):
         clip.close()
         
         with open(gif_path, 'rb') as f:
-            await update.message.reply_animation(animation=f, caption="? Converted to GIF")
+            await update.message.reply_animation(animation=f, caption="✨ Converted to GIF")
         
         # Cleanup
         os.remove(video_path)
@@ -4133,75 +4170,105 @@ async def video_to_gif(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await msg.delete()
         
     except Exception as e:
-        await msg.edit_text(f"? GIF Error: {str(e)}")
+        await msg.edit_text(f"❌ GIF Error: {str(e)}")
 
 async def youtube_playlist_dl(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Download entire YouTube Playlist"""
+    """Download entire YouTube Playlist with professional handling"""
+    if not await check_auth(update): return
     if not context.args:
-        await update.message.reply_text("?? **Playlist Downloader**\n\nUsage: `/playlist [URL]`")
+        await update.message.reply_text("📂 **Einstein Playlist Downloader**\n━━━━━━━━━━━━━━━━━━━━━\nUsage: `/playlist [URL]`\n\n✨ *Einstein will extract all videos from the linked playlist.*", parse_mode='HTML')
         return
     
     url = context.args[0]
-    progress_msg = await update.message.reply_text("?? `Analyzing playlist... This can take time.`", parse_mode='HTML')
+    status_msg = await update.message.reply_text("📂 `Einstein OS: Analyzing playlist structure...` 🧬", parse_mode='HTML')
     
     try:
         import yt_dlp
-        ydl_opts = {
+        # Fast extraction settings
+        ydl_opts_extract = {
             'extract_flat': True,
             'quiet': True,
+            'no_warnings': True,
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
         }
         
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            if 'entries' not in info:
-                await progress_msg.edit_text("? This doesn't look like a playlist.")
+        with yt_dlp.YoutubeDL(ydl_opts_extract) as ydl:
+            playlist_info = await asyncio.get_event_loop().run_in_executor(None, lambda: ydl.extract_info(url, download=False))
+            
+            if not playlist_info or 'entries' not in playlist_info:
+                await status_msg.edit_text("❌ `Invalid playlist or no accessible videos found.`")
                 return
             
-            entries = list(info['entries'])
+            entries = [e for e in playlist_info['entries'] if e]
             count = len(entries)
-            await progress_msg.edit_text(f"?? Found {count} videos. Starting background download...")
+            playlist_title = playlist_info.get('title', 'Unknown Playlist')
             
-            # For simplicity in this bot, we'll download one by one in a loop
-            # Real production bots would use a task queue
-            for i, entry in enumerate(entries[:10]): # Limit to 10 for safety
+            await status_msg.edit_text(
+                f"📂 **Playlist Found:** `{escape_html(playlist_title)}`\n"
+                f"🔢 **Total Videos:** `{count}`\n\n"
+                f"⚡ `Einstein is initiating batch processing...` 🧪",
+                parse_mode='HTML'
+            )
+            
+            # Start downloading in background tasks to avoid blocking
+            for i, entry in enumerate(entries):
                 video_url = f"https://www.youtube.com/watch?v={entry['id']}"
-                # Call existing video_downloader logic via Mock classes if needed, 
-                # but here we just send info.
-                await update.message.reply_text(f"?? [{i+1}/{count}] Processing: {entry['title']}\nUse `/video {video_url}` to download manually if it fails.")
+                # Create a mock context for the video_downloader
+                class MockContext:
+                    def __init__(self, args, app):
+                        self.args = args
+                        self.application = app
+                        self.bot = app.bot
                 
-            if count > 10:
-                await update.message.reply_text("?? Playlist limited to first 10 videos to prevent server overload.")
+                # We process them sequentially in this loop but wrap in task for safety
+                # For very large playlists, this might be slow, but it's reliable
+                await update.message.reply_text(f"📦 `[{i+1}/{count}] Processing:` **{escape_html(entry.get('title', 'Video'))}**", parse_mode='HTML')
+                
+                try:
+                    mock_ctx = MockContext([video_url], context.application)
+                    # Pass specific flag to video_downloader if needed, or just call it
+                    await video_downloader(update, mock_ctx)
+                except Exception as e:
+                    await update.message.reply_text(f"⚠️ `Failed to process video {i+1}: {str(e)[:50]}`")
+                
+                # Small delay between starting downloads to prevent spam filters
+                await asyncio.sleep(1)
+
+        await status_msg.edit_text(f"✅ **Playlist Download Task Completed!**\n📂 `{escape_html(playlist_title)}` processed.", parse_mode='HTML')
                 
     except Exception as e:
-        await progress_msg.edit_text(f"? Playlist Error: {str(e)}")
+        import traceback
+        print(f"Playlist Error: {traceback.format_exc()}")
+        await status_msg.edit_text(f"❌ **Playlist Error:** `{str(e)[:100]}`", parse_mode='HTML')
 
 async def ai_video_generator(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Generate realistic AI videos using Pollinations AI (Free)"""
     if not await check_auth(update): return
     if not context.args:
+        # ... (rest of the code remains the same)
         await update.message.reply_text(
-            "?? **Einstein Realistic Video Generator**\n"
-            "?????????????????????\n"
+            "🎬 **Einstein Realistic Video Generator**\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
             "Usage: `/vgen [your prompt]`\n\n"
             "**Examples:**\n"
-            "� `/vgen a futuristic city with flying cars, cinematic lighting, 4k`\n"
-            "� `/vgen realistic waterfall in a deep forest, slow motion`\n\n"
-            "? *\"Imagination is the preview of life's coming attractions.\"*",
+            "• `/vgen a futuristic city with flying cars, cinematic lighting, 4k`\n"
+            "• `/vgen realistic waterfall in a deep forest, slow motion`\n\n"
+            "✨ *\"Imagination is the preview of life's coming attractions.\"*",
             parse_mode='HTML'
         )
         return
     
     prompt = " ".join(context.args)
-    status_msg = await update.message.reply_text("?? `Einstein is directing your scene...` ??")
+    status_msg = await update.message.reply_text("🎬 `Einstein is directing your scene...` 🎥")
     
     try:
         await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.UPLOAD_VIDEO)
         
         # Animated Progress
         animations = [
-            "?? `Synthesizing neural frames...`",
-            "? `Polishing realistic textures...`",
-            "??? `Compiling cinematic sequence...`"
+            "🧬 `Synthesizing neural frames...`",
+            "✨ `Polishing realistic textures...`",
+            "🎞️ `Compiling cinematic sequence...`"
         ]
         
         for anim in animations:
@@ -4271,7 +4338,7 @@ async def ai_video_generator(update: Update, context: ContextTypes.DEFAULT_TYPE)
                         
                         # Check if it's actually a video content
                         if 'video' in content_type or 'application/octet-stream' in content_type:
-                            print(f"? Video content detected: {content_type}")
+                            print(f"✅ Video content detected: {content_type}")
                             break
                         else:
                             # Peek at first chunk to verify it's not HTML
@@ -4293,7 +4360,7 @@ async def ai_video_generator(update: Update, context: ContextTypes.DEFAULT_TYPE)
                     if video_response is None:
                         if attempt < max_retries - 1:
                             wait_time = (attempt + 1) * 30
-                            await status_msg.edit_text(f"? `Einstein is retrying... (Variant {variant_idx+1}, Attempt {attempt + 2}/{max_retries} in {wait_time}s)`\n`Error: {last_error}`", parse_mode='HTML')
+                            await status_msg.edit_text(f"⏳ `Einstein is retrying... (Variant {variant_idx+1}, Attempt {attempt + 2}/{max_retries} in {wait_time}s)`\n`Error: {last_error}`", parse_mode='HTML')
                             await asyncio.sleep(wait_time)
                             continue
                 except Exception as e:
@@ -4301,7 +4368,7 @@ async def ai_video_generator(update: Update, context: ContextTypes.DEFAULT_TYPE)
                     video_response = None
                     if attempt < max_retries - 1:
                         wait_time = (attempt + 1) * 30
-                        await status_msg.edit_text(f"? `Einstein is retrying... (Variant {variant_idx+1}, Attempt {attempt + 2}/{max_retries} in {wait_time}s)`\n`Error: {last_error}`", parse_mode='HTML')
+                        await status_msg.edit_text(f"⏳ `Einstein is retrying... (Variant {variant_idx+1}, Attempt {attempt + 2}/{max_retries} in {wait_time}s)`\n`Error: {last_error}`", parse_mode='HTML')
                         await asyncio.sleep(wait_time)
                         continue
                     break
@@ -4312,7 +4379,7 @@ async def ai_video_generator(update: Update, context: ContextTypes.DEFAULT_TYPE)
         if not video_response or video_response.status_code != 200:
             # Fallback 1: Try JSON2Video API for video generation
             if JSON2VIDEO_KEY:
-                await status_msg.edit_text("?? `Pollinations overloaded. Trying JSON2Video...` ??", parse_mode='HTML')
+                await status_msg.edit_text("⚠️ `Pollinations overloaded. Trying JSON2Video...` 🎬", parse_mode='HTML')
                 
                 try:
                     # JSON2Video API endpoint
@@ -4338,7 +4405,7 @@ async def ai_video_generator(update: Update, context: ContextTypes.DEFAULT_TYPE)
                         if job_id:
                             max_polls = 30
                             for poll in range(max_polls):
-                                await status_msg.edit_text(f"? `JSON2Video generating... ({poll+1}/{max_polls})` ??", parse_mode='HTML')
+                                await status_msg.edit_text(f"⏳ `JSON2Video generating... ({poll+1}/{max_polls})` 🎬", parse_mode='HTML')
                                 
                                 status_url = f'https://api.json2video.com/v1/videos/status/{job_id}'
                                 status_resp = requests.get(status_url, headers=json2_headers, timeout=10)
@@ -4355,7 +4422,7 @@ async def ai_video_generator(update: Update, context: ContextTypes.DEFAULT_TYPE)
                                                     'status_code': 200,
                                                     'iter_content': lambda self, chunk_size: [video_download.content[i:i+chunk_size] for i in range(0, len(video_download.content), chunk_size)]
                                                 })()
-                                                print("? JSON2Video generated successfully")
+                                                print("✅ JSON2Video generated successfully")
                                                 break
                                     elif status_data.get('status') == 'failed':
                                         raise Exception(f"JSON2Video failed: {status_data.get('error', 'Unknown')}")
@@ -4375,7 +4442,7 @@ async def ai_video_generator(update: Update, context: ContextTypes.DEFAULT_TYPE)
             
             # Fallback 2: Try Sisif.ai API for video generation
             if not video_response and SISIF_API_KEY:
-                await status_msg.edit_text("?? `JSON2Video failed. Trying Sisif.ai...` ??", parse_mode='HTML')
+                await status_msg.edit_text("⚠️ `JSON2Video failed. Trying Sisif.ai...` 🎬", parse_mode='HTML')
                 
                 try:
                     sisif_headers = {
@@ -4400,7 +4467,7 @@ async def ai_video_generator(update: Update, context: ContextTypes.DEFAULT_TYPE)
                         if job_id:
                             max_polls = 30
                             for poll in range(max_polls):
-                                await status_msg.edit_text(f"? `Sisif.ai generating... ({poll+1}/{max_polls})` ??", parse_mode='HTML')
+                                await status_msg.edit_text(f"⏳ `Sisif.ai generating... ({poll+1}/{max_polls})` 🎬", parse_mode='HTML')
                                 
                                 status_url = f'https://api.sisif.ai/v1/videos/status/{job_id}'
                                 status_resp = requests.get(status_url, headers=sisif_headers, timeout=10)
@@ -4417,7 +4484,7 @@ async def ai_video_generator(update: Update, context: ContextTypes.DEFAULT_TYPE)
                                                     'status_code': 200,
                                                     'iter_content': lambda self, chunk_size: [video_download.content[i:i+chunk_size] for i in range(0, len(video_download.content), chunk_size)]
                                                 })()
-                                                print("? Sisif.ai generated successfully")
+                                                print("✅ Sisif.ai generated successfully")
                                                 break
                                     elif status_data.get('status') == 'failed':
                                         raise Exception(f"Sisif.ai failed: {status_data.get('error', 'Unknown')}")
@@ -4437,7 +4504,7 @@ async def ai_video_generator(update: Update, context: ContextTypes.DEFAULT_TYPE)
             
             # Fallback 3: Try Google Veo 3 API for video generation
             if not video_response and VEO3_API_KEY:
-                await status_msg.edit_text("?? `Sisif.ai failed. Trying Google Veo 3...` ??", parse_mode='HTML')
+                await status_msg.edit_text("⚠️ `Sisif.ai failed. Trying Google Veo 3...` 🎬", parse_mode='HTML')
                 
                 try:
                     # Google Veo 3 via Vertex AI / Google AI Studio
@@ -4472,14 +4539,14 @@ async def ai_video_generator(update: Update, context: ContextTypes.DEFAULT_TYPE)
                                 'status_code': 200,
                                 'iter_content': lambda self, chunk_size: [video_bytes[i:i+chunk_size] for i in range(0, len(video_bytes), chunk_size)]
                             })()
-                            print("? Google Veo 3 generated successfully")
+                            print("✅ Google Veo 3 generated successfully")
                         elif 'operation' in response_data:
                             # Long-running operation, need to poll
                             operation_name = response_data['operation']['name']
                             max_polls = 60  # 6 minutes max for Veo
                             
                             for poll in range(max_polls):
-                                await status_msg.edit_text(f"? `Veo 3 generating... ({poll+1}/{max_polls})` ??", parse_mode='HTML')
+                                await status_msg.edit_text(f"⏳ `Veo 3 generating... ({poll+1}/{max_polls})` 🎬", parse_mode='HTML')
                                 
                                 poll_url = f'https://generativelanguage.googleapis.com/v1beta/{operation_name}'
                                 poll_resp = requests.get(poll_url, headers=veo_headers, timeout=10)
@@ -4498,7 +4565,7 @@ async def ai_video_generator(update: Update, context: ContextTypes.DEFAULT_TYPE)
                                                 'status_code': 200,
                                                 'iter_content': lambda self, chunk_size: [video_bytes[i:i+chunk_size] for i in range(0, len(video_bytes), chunk_size)]
                                             })()
-                                            print("? Google Veo 3 generated successfully (async)")
+                                            print("✅ Google Veo 3 generated successfully (async)")
                                             break
                                         else:
                                             raise Exception("Veo 3 operation completed but no video in response")
@@ -4522,7 +4589,7 @@ async def ai_video_generator(update: Update, context: ContextTypes.DEFAULT_TYPE)
             
             # Fallback 4: Generate AI image instead
             if not video_response:
-                await status_msg.edit_text("?? `Video APIs failed. Creating AI image fallback...` ??", parse_mode='HTML')
+                await status_msg.edit_text("⚠️ `Video APIs failed. Creating AI image fallback...` 🎨", parse_mode='HTML')
                 
                 try:
                     # Try to generate a high-quality image instead
@@ -4557,13 +4624,13 @@ async def ai_video_generator(update: Update, context: ContextTypes.DEFAULT_TYPE)
                             await update.message.reply_photo(
                                 photo=photo,
                                 caption=(
-                                    f"?? **AI Image Generated** (Video API Overloaded)\n"
-                                    f"?????????????????????\n"
-                                    f"?? **Prompt:** `{prompt}`\n\n"
-                                    f"?? *Video generation is temporarily unavailable.*\n"
-                                    f"??? *Sending AI image as fallback.*\n\n"
-                                    f"????? *\"Creativity is intelligence having fun.\"*\n"
-                                    f"?? @alberteinstein247_bot"
+                                    f"🎨 **AI Image Generated** (Video API Overloaded)\n"
+                                    f"━━━━━━━━━━━━━━━━━━━━━\n"
+                                    f"📝 **Prompt:** `{prompt}`\n\n"
+                                    f"⚠️ *Video generation is temporarily unavailable.*\n"
+                                    f"🖼️ *Sending AI image as fallback.*\n\n"
+                                    f"👨‍🔬 *\"Creativity is intelligence having fun.\"*\n"
+                                    f"📥 @alberteinstein247_bot"
                                 ),
                                 parse_mode='HTML'
                             )
@@ -4591,11 +4658,11 @@ async def ai_video_generator(update: Update, context: ContextTypes.DEFAULT_TYPE)
             await update.message.reply_video(
                 video=video_file,
                 caption=(
-                    f"?? **AI Masterpiece Generated!**\n"
-                    f"?????????????????????\n"
-                    f"?? **Prompt:** `{prompt}`\n\n"
-                    f"????? *\"Creativity is intelligence having fun.\"*\n"
-                    f"?? @alberteinstein247_bot"
+                    f"🎬 **AI Masterpiece Generated!**\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"📝 **Prompt:** `{prompt}`\n\n"
+                    f"👨‍🔬 *\"Creativity is intelligence having fun.\"*\n"
+                    f"📥 @alberteinstein247_bot"
                 ),
                 parse_mode='HTML'
             )
@@ -4608,26 +4675,26 @@ async def ai_video_generator(update: Update, context: ContextTypes.DEFAULT_TYPE)
         
     except Exception as e:
         error_text = str(e).replace('_', '\\_')
-        await status_msg.edit_text(f"? **Cinematic Failure:**\n`{error_text[:100]}`", parse_mode='HTML')
+        await status_msg.edit_text(f"❌ **Cinematic Failure:**\n`{error_text[:100]}`", parse_mode='HTML')
 
 async def ai_thumbnail_generator(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Generate professional AI thumbnails using Pollinations AI"""
     if not await check_auth(update): return
     if not context.args:
         await update.message.reply_text(
-            "??? **Einstein Thumbnail Generator**\n"
-            "?????????????????????\n"
+            "🖼️ **Einstein Thumbnail Generator**\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
             "Usage: `/thumb [your prompt]`\n\n"
             "**Examples:**\n"
-            "� `/thumb futuristic gaming setup, neon lights, 8k, highly detailed`\n"
-            "� `/thumb anime girl in a rainy city, cinematic lighting, vibrant colors`\n\n"
-            "? *\"Design is not just what it looks like and feels like. Design is how it works.\"*",
+            "• `/thumb futuristic gaming setup, neon lights, 8k, highly detailed`\n"
+            "• `/thumb anime girl in a rainy city, cinematic lighting, vibrant colors`\n\n"
+            "✨ *\"Design is not just what it looks like and feels like. Design is how it works.\"*",
             parse_mode='HTML'
         )
         return
     
     prompt = " ".join(context.args)
-    status_msg = await update.message.reply_text("??? `Einstein is designing your thumbnail...` ??")
+    status_msg = await update.message.reply_text("🖼️ `Einstein is designing your thumbnail...` 🎨")
     
     try:
         await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.UPLOAD_PHOTO)
@@ -4667,14 +4734,14 @@ async def ai_thumbnail_generator(update: Update, context: ContextTypes.DEFAULT_T
         for url_idx, image_url in enumerate(image_urls):
             for attempt in range(3):
                 try:
-                    await status_msg.edit_text(f"??? `Generating thumbnail... (Attempt {url_idx+1}.{attempt+1})` ??", parse_mode='HTML')
+                    await status_msg.edit_text(f"🖼️ `Generating thumbnail... (Attempt {url_idx+1}.{attempt+1})` 🎨", parse_mode='HTML')
                     
                     response = requests.get(image_url, timeout=60, headers=headers)
                     
                     if response.status_code == 200:
                         content_type = response.headers.get('Content-Type', '')
                         if 'image' in content_type:
-                            print(f"? Thumbnail generated successfully from URL {url_idx+1}")
+                            print(f"✅ Thumbnail generated successfully from URL {url_idx+1}")
                             break
                         else:
                             last_error = f"Non-image content: {content_type}"
@@ -4697,7 +4764,7 @@ async def ai_thumbnail_generator(update: Update, context: ContextTypes.DEFAULT_T
         
         if not response or response.status_code != 200:
             # Fallback: Try Hugging Face Inference API
-            await status_msg.edit_text("?? `Pollinations API down. Trying Hugging Face...` ??", parse_mode='HTML')
+            await status_msg.edit_text("⚠️ `Pollinations API down. Trying Hugging Face...` 🤗", parse_mode='HTML')
             
             try:
                 # Hugging Face Inference API - Stable Diffusion
@@ -4720,7 +4787,7 @@ async def ai_thumbnail_generator(update: Update, context: ContextTypes.DEFAULT_T
                         'status_code': 200,
                         'headers': {'Content-Type': 'image/jpeg'}
                     })()
-                    print("? Hugging Face image generated successfully")
+                    print("✅ Hugging Face image generated successfully")
                 else:
                     raise Exception(f"Hugging Face API error: {hf_response.status_code}")
                     
@@ -4741,11 +4808,11 @@ async def ai_thumbnail_generator(update: Update, context: ContextTypes.DEFAULT_T
             await update.message.reply_photo(
                 photo=photo,
                 caption=(
-                    f"??? **AI Thumbnail Created!**\n"
-                    f"?????????????????????\n"
-                    f"?? **Prompt:** `{prompt}`\n\n"
-                    f"????? *\"Logic will get you from A to B. Imagination will take you everywhere.\"*\n"
-                    f"?? @alberteinstein247_bot"
+                    f"🖼️ **AI Thumbnail Created!**\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"📝 **Prompt:** `{prompt}`\n\n"
+                    f"👨‍🔬 *\"Logic will get you from A to B. Imagination will take you everywhere.\"*\n"
+                    f"📥 @alberteinstein247_bot"
                 ),
                 parse_mode='HTML'
             )
@@ -4758,23 +4825,23 @@ async def ai_thumbnail_generator(update: Update, context: ContextTypes.DEFAULT_T
         
     except Exception as e:
         error_text = str(e).replace('_', '\\_')
-        await status_msg.edit_text(f"? **Design Failure:**\n`{error_text[:100]}`", parse_mode='HTML')
+        await status_msg.edit_text(f"❌ **Design Failure:**\n`{error_text[:100]}`", parse_mode='HTML')
 
 async def bot_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Manage bot profile with Einstein elegance"""
     if not await check_auth(update): return
     if not context.args:
         help_text = (
-            "?? **Einstein Bot Profile Manager**\n"
-            "?????????????????????\n"
-            "????? *\"Identity is the result of many factors.\"*\n\n"
+            "🤖 **Einstein Bot Profile Manager**\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            "👨‍🔬 *\"Identity is the result of many factors.\"*\n\n"
             "**Available Modules:**\n"
-            "� `/botprofile name [text]` - Rename the experiment\n"
-            "� `/botprofile description [text]` - Detail the objective\n"
-            "� `/botprofile about [text]` - Summary of existence\n"
-            "� `/botprofile photo` - (Reply to photo) Visual update\n"
-            "� `/botprofile info` - Analyze current identity\n\n"
-            "? *Select a module to proceed.*"
+            "• `/botprofile name [text]` - Rename the experiment\n"
+            "• `/botprofile description [text]` - Detail the objective\n"
+            "• `/botprofile about [text]` - Summary of existence\n"
+            "• `/botprofile photo` - (Reply to photo) Visual update\n"
+            "• `/botprofile info` - Analyze current identity\n\n"
+            "✨ *Select a module to proceed.*"
         )
         await update.message.reply_text(help_text, parse_mode='HTML')
         return
@@ -4785,17 +4852,17 @@ async def bot_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if command == "name" and len(context.args) > 1:
             new_name = " ".join(context.args[1:])
             await context.bot.set_my_name(name=new_name)
-            await update.message.reply_text(f"? **Identity Reconfigured:** `{new_name}`", parse_mode='HTML')
+            await update.message.reply_text(f"✅ **Identity Reconfigured:** `{new_name}`", parse_mode='HTML')
             
         elif command == "description" and len(context.args) > 1:
             description = " ".join(context.args[1:])
             await context.bot.set_my_description(description=description)
-            await update.message.reply_text(f"? **Objective Updated:**\n`{description}`", parse_mode='HTML')
+            await update.message.reply_text(f"✅ **Objective Updated:**\n`{description}`", parse_mode='HTML')
             
         elif command == "about" and len(context.args) > 1:
             about = " ".join(context.args[1:])
             await context.bot.set_my_short_description(short_description=about)
-            await update.message.reply_text(f"? **Core Essence Updated:**\n`{about}`", parse_mode='HTML')
+            await update.message.reply_text(f"✅ **Core Essence Updated:**\n`{about}`", parse_mode='HTML')
             
         elif command == "photo":
             if update.message.reply_to_message and update.message.reply_to_message.photo:
@@ -4805,34 +4872,34 @@ async def bot_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await file.download_to_drive(photo_path)
                 with open(photo_path, 'rb') as f:
                     await context.bot.set_my_profile_photo(photo=f)
-                await update.message.reply_text("? **Visual Identity Updated!** ??")
+                await update.message.reply_text("✅ **Visual Identity Updated!** 📸")
                 if os.path.exists(photo_path): os.remove(photo_path)
             else:
-                await update.message.reply_text("?? **Awaiting visual data.** Please reply to a photo with `/botprofile photo`.")
+                await update.message.reply_text("📸 **Awaiting visual data.** Please reply to a photo with `/botprofile photo`.")
                 
         elif command == "info":
             me = await context.bot.get_me()
             await update.message.reply_text(
-                "?? **Identity Analysis**\n"
-                "?????????????????????\n"
-                f"?? **Name:** `{me.first_name}`\n"
-                f"??? **Username:** @{me.username}\n"
-                f"?? **Serial:** `{me.id}`\n\n"
-                "? *Identity confirmed.*",
+                "🤖 **Identity Analysis**\n"
+                "━━━━━━━━━━━━━━━━━━━━━\n"
+                f"👤 **Name:** `{me.first_name}`\n"
+                f"🏷️ **Username:** @{me.username}\n"
+                f"🆔 **Serial:** `{me.id}`\n\n"
+                "✨ *Identity confirmed.*",
                 parse_mode='HTML'
             )
         else:
-            await update.message.reply_text("?? **Invalid Module.** Use `/botprofile` for help.")
+            await update.message.reply_text("⚠️ **Invalid Module.** Use `/botprofile` for help.")
     except Exception as e:
-        await update.message.reply_text(f"? **System Error:** `{str(e)}`", parse_mode='HTML')
+        await update.message.reply_text(f"❌ **System Error:** `{str(e)}`", parse_mode='HTML')
 
 async def send_animated_text(update: Update, text: str, parse_mode='HTML'):
     """Sends a message with a blinking/typing animation effect"""
-    message = await update.message.reply_text("? `Einstein is thinking...` ??", parse_mode=parse_mode)
-    frames = ["?", "?", "?", "??"]
+    message = await update.message.reply_text("✨ `Einstein is thinking...` 🧠", parse_mode=parse_mode)
+    frames = ["⏳", "⌛", "✨", "🧠"]
     
     # Simulate attractive style with formatting
-    attractive_text = f"?? **Einstein System** ??\n?????????????????????\n{text}\n?????????????????????\n?? @alberteinstein247_bot"
+    attractive_text = f"🧬 **Einstein System** 🧬\n━━━━━━━━━━━━━━━━━━━━━\n{text}\n━━━━━━━━━━━━━━━━━━━━━\n📥 @alberteinstein247_bot"
     
     # Small animation delay
     for frame in frames:
@@ -4884,7 +4951,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Check maintenance mode
     if bot_config.get("maintenance_mode") and user_id != int(ALLOWED_USER_ID):
-        await update.message.reply_text("??? Bot is currently under maintenance. Please try again later.")
+        await update.message.reply_text("🛠️ Bot is currently under maintenance. Please try again later.")
         return
     
     # Handle button clicks - still process these as commands
@@ -4895,48 +4962,48 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "last_seen": time.time()
         }
     
-    if text == '?? Status':
+    if text == '📊 Status':
         await system_status(update, context)
-    elif text == '?? Files' or text == '?? Manager':
+    elif text == '📂 Files' or text == '📂 Manager':
         await list_files(update, context)
-    elif text == '?? CMD':
-        await update.message.reply_text("?? CMD Mode Active!\nSend any command to run in terminal.")
-    elif text == '??? Weather':
+    elif text == '💻 CMD':
+        await update.message.reply_text("💻 CMD Mode Active!\nSend any command to run in terminal.")
+    elif text == '🌤️ Weather':
         await get_weather(update, None)
-    elif text == '?? Search':
-        await update.message.reply_text("?? Search Mode\n\nType your search query and I'll search the web for you!")
-    elif text == '????? Einstein' or text == 'Einstein AI':
+    elif text == '🔍 Search':
+        await update.message.reply_text("🔍 Search Mode\n\nType your search query and I'll search the web for you!")
+    elif text == '👨‍🔬 Einstein' or text == 'Einstein AI':
         await update.message.reply_text(
-            "????? **Einstein AI Mode**\n\n"
+            "👨‍🔬 **Einstein AI Mode**\n\n"
             "Just type any message and I'll reply with AI!\n\n"
             "Example:\n"
-            "� 'Explain relativity'\n"
-            "� 'What is the weather like?'"
+            "• 'Explain relativity'\n"
+            "• 'What is the weather like?'"
         )
-    elif text == '?? YT Search':
+    elif text == '🔎 YT Search':
         await update.message.reply_text(
-            "?? **YouTube Search**\n???????????????\n"
+            "🔎 **YouTube Search**\n━━━━━━━━━━━━━━━\n"
             "Send me what you want to search for using:\n"
             "`/yt search [your query]`\n\n"
             "Example: `/yt search funny cats`",
             parse_mode='HTML'
         )
-    elif text == '?? Browser':
+    elif text == '🌐 Browser':
         await browser_control(update, context)
-    elif text == '?? Capture' or text == '?? Screenshot':
+    elif text == '📸 Capture' or text == '📸 Screenshot':
         await take_screenshot(update, context)
-    elif text == '??? Utils':
+    elif text == '🛠️ Utils':
         await utilities_manager(update, context)
-    elif text == '?? Phone':
+    elif text == '📱 Phone':
         await phone_control(update, context)
-    elif text == '?? Share Loc':
+    elif text == '📍 Share Loc':
         if not await check_auth(update): return
         user_id = str(update.effective_user.id)
         if user_id in share_location_active:
             del share_location_active[user_id]
-            await update.message.reply_text("?? **Location sharing stopped.**", parse_mode='HTML')
+            await update.message.reply_text("🛑 **Location sharing stopped.**", parse_mode='HTML')
         else:
-            await update.message.reply_text("?? **Send the User ID** of the person you want to share your real-time location with.\n\nUsage: `share [user_id]`")
+            await update.message.reply_text("📍 **Send the User ID** of the person you want to share your real-time location with.\n\nUsage: `share [user_id]`")
     elif text.startswith('share '):
         if not await check_auth(update): return
         target_id = text.split(' ')[1]
@@ -4945,47 +5012,47 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             share_location_active[user_id] = []
         if target_id not in share_location_active[user_id]:
             share_location_active[user_id].append(target_id)
-        await update.message.reply_text(f"? **Now sharing real-time location with:** `{target_id}`\n\nEnsure your device is polling the API.", parse_mode='HTML')
-    elif text == '?? Media' or text == '?? YouTube':
+        await update.message.reply_text(f"✅ **Now sharing real-time location with:** `{target_id}`\n\nEnsure your device is polling the API.", parse_mode='HTML')
+    elif text == '📺 Media' or text == '📺 YouTube':
         await youtube_control(update, None)
-    elif text == '?? Chat':
+    elif text == '💬 Chat':
         await ai_chat(update, None)
-    elif text == '?? GitHub':
+    elif text == '🐙 GitHub':
         await github_control(update, context)
-    elif text == '?? Gmail':
+    elif text == '📧 Gmail':
         await gmail_control(update, context)
-    elif text == '?? Notes':
+    elif text == '📝 Notes':
         await notes_manager(update, context)
-    elif text == '? Remind':
+    elif text == '⏰ Remind':
         await reminders_manager(update, context)
-    elif text == '?? Calendar':
+    elif text == '📅 Calendar':
         await calendar_manager(update, context)
-    elif text == '?? Travel':
+    elif text == '✈️ Travel':
         await flight_checkin(update, context)
-    elif text == '?? Manager' or text == '?? Files':
+    elif text == '📁 Manager' or text == '📂 Files':
         await list_files(update, context)
-    elif text == '?? SmartHome':
+    elif text == '🏠 SmartHome':
         await smarthome_control(update, context)
-    elif text == '?? Discord':
+    elif text == '💬 Discord':
         await discord_webhook(update, context)
-    elif text == '?? AI Smart':
+    elif text == '🤖 AI Smart':
         await ai_command_processor(update, context)
-    elif text == '?? Help' or text == '?? Help':
+    elif text == '📖 Help' or text == 'ℹ️ Help':
         await help_command(update, context)
     elif text.startswith('/yt'):
         # /yt commands are handled by CommandHandler
         pass
-    elif text == '?? TikTok':
+    elif text == '🎵 TikTok':
         await tiktok_control(update, None)
-    elif text == '?? Twitter':
+    elif text == '🐦 Twitter':
         await twitter_control(update, None)
-    elif text == '?? Spotify':
+    elif text == '🎵 Spotify':
         await spotify_control(update, None)
-    elif text == '?? WhatsApp':
+    elif text == '💬 WhatsApp':
         await whatsapp_control(update, context)
-    elif text == '? All Commands':
+    elif text == '� All Commands':
         await help_command(update, context)
-    elif text == '?? Help':
+    elif text == 'ℹ️ Help':
         await help_command(update, context)
     elif text.startswith('/'):
         # Commands are handled by CommandHandler, ignore here
@@ -5033,12 +5100,12 @@ async def multi_video_downloader(update: Update, context: ContextTypes.DEFAULT_T
     
     if not context.args:
         await update.message.reply_text(
-            "?? **Einstein Multi-Video Downloader**\n"
-            "?????????????????????\n"
+            "📦 **Einstein Multi-Video Downloader**\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
             "Download multiple videos simultaneously!\n\n"
             "**Usage:**\n"
             "`/multivideo [URL1] [URL2] [URL3]...`\n\n"
-            "? *Separating space-time coordinates for batch processing.*",
+            "✨ *Separating space-time coordinates for batch processing.*",
             parse_mode='HTML'
         )
         return
@@ -5047,21 +5114,21 @@ async def multi_video_downloader(update: Update, context: ContextTypes.DEFAULT_T
     total = len(urls)
     
     status_msg = await update.message.reply_text(
-        f"?? **Batch Process Initiated**\n"
-        f"?????????????????????\n"
-        f"?? **Total Videos:** `{total}`\n"
-        f"? `Processing queue...`",
+        f"🚀 **Batch Process Initiated**\n"
+        f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"📦 **Total Videos:** `{total}`\n"
+        f"⏳ `Processing queue...`",
         parse_mode='HTML'
     )
     
     for i, url in enumerate(urls, 1):
         try:
             await status_msg.edit_text(
-                f"?? **Batch Processing**\n"
-                f"?????????????????????\n"
-                f"?? **Video:** `{i}/{total}`\n"
-                f"?? **URL:** `{url[:30]}...`\n"
-                f"? `Downloading...`",
+                f"🚀 **Batch Processing**\n"
+                f"━━━━━━━━━━━━━━━━━━━━━\n"
+                f"📦 **Video:** `{i}/{total}`\n"
+                f"🔗 **URL:** `{url[:30]}...`\n"
+                f"⏳ `Downloading...`",
                 parse_mode='HTML'
             )
             
@@ -5078,14 +5145,14 @@ async def multi_video_downloader(update: Update, context: ContextTypes.DEFAULT_T
             await video_downloader(update, mock_ctx)
             
         except Exception as e:
-            await update.message.reply_text(f"? **Error downloading video {i}:**\n`{str(e)[:100]}`")
+            await update.message.reply_text(f"❌ **Error downloading video {i}:**\n`{str(e)[:100]}`")
             continue
             
     await status_msg.edit_text(
-        f"? **Batch Process Complete!**\n"
-        f"?????????????????????\n"
-        f"?? **Processed:** `{total}` videos.\n"
-        f"? *Experiment successful.*",
+        f"✅ **Batch Process Complete!**\n"
+        f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"📦 **Processed:** `{total}` videos.\n"
+        f"✨ *Experiment successful.*",
         parse_mode='HTML'
     )
 
@@ -5098,38 +5165,38 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     help_title = get_text('help_title', lang)
     
     help_text = (
-        f"?? <b>{help_title}</b> ??\n"
-        "?????????????????????\n"
-        "<b>?? Media Module:</b>\n"
-        "� <code>/video [URL]</code> - High-speed download\n"
-        "� <code>/video_hq [URL]</code> - Best quality 4K/8K\n"
-        "� <code>/play [URL]</code> - Instant streaming\n"
-        "� <code>/music [URL]</code> - MP3 audio extraction\n\n"
-        "<b>????? AI Module:</b>\n"
-        "� <code>/smart [task]</code> - AI Command Processor\n"
-        "� <code>/gen [prompt]</code> - AI Image Generator\n"
-        "� <code>/vgen [prompt]</code> - AI Video Generator\n"
-        "� <code>/ollama [query]</code> - Local AI Brain\n\n"
-        "<b>??? System Module:</b>\n"
-        "� <code>/start</code> - Launch main terminal\n"
-        "� <code>/status</code> - Check system vitals\n"
-        "� <code>/list</code> - File manager access\n"
-        "� <code>/discord [URL] [msg]</code> - Webhook bridge\n\n"
-        "?? <b>SYSTEM</b>\n"
-        "� /botprofile - Customize Bot\n"
-        "� /language - Change Language\n\n"
-        "?????????????????????\n"
-        "?? <i>Tip: Reply to any video with /gif to convert!</i>"
+        f"🧬 <b>{help_title}</b> 🧬\n"
+        "━━━━━━━━━━━━━━━━━━━━━\n"
+        "<b>📺 Media Module:</b>\n"
+        "• <code>/video [URL]</code> - High-speed download\n"
+        "• <code>/video_hq [URL]</code> - Best quality 4K/8K\n"
+        "• <code>/play [URL]</code> - Instant streaming\n"
+        "• <code>/music [URL]</code> - MP3 audio extraction\n\n"
+        "<b>👨‍🔬 AI Module:</b>\n"
+        "• <code>/smart [task]</code> - AI Command Processor\n"
+        "• <code>/gen [prompt]</code> - AI Image Generator\n"
+        "• <code>/vgen [prompt]</code> - AI Video Generator\n"
+        "• <code>/ollama [query]</code> - Local AI Brain\n\n"
+        "<b>🛠️ System Module:</b>\n"
+        "• <code>/start</code> - Launch main terminal\n"
+        "• <code>/status</code> - Check system vitals\n"
+        "• <code>/list</code> - File manager access\n"
+        "• <code>/discord [URL] [msg]</code> - Webhook bridge\n\n"
+        "⚙️ <b>SYSTEM</b>\n"
+        "• /botprofile - Customize Bot\n"
+        "• /language - Change Language\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━\n"
+        "💡 <i>Tip: Reply to any video with /gif to convert!</i>"
     )
     
     keyboard = [
         [
-            InlineKeyboardButton("?? Web Panel", url=f"http://127.0.0.1:{WEB_PORT}"),
-            InlineKeyboardButton("????? AI Chat", callback_data="ai_chat_prompt")
+            InlineKeyboardButton("🌐 Web Panel", url=f"http://127.0.0.1:{WEB_PORT}"),
+            InlineKeyboardButton("👨‍🔬 AI Chat", callback_data="ai_chat_prompt")
         ],
         [
-            InlineKeyboardButton("?? YouTube", callback_data="yt_search_prompt"),
-            InlineKeyboardButton("??? Generate Image", callback_data="gen_prompt")
+            InlineKeyboardButton("🎥 YouTube", callback_data="yt_search_prompt"),
+            InlineKeyboardButton("🖼️ Generate Image", callback_data="gen_prompt")
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -6094,12 +6161,12 @@ async def start_discord_bot():
     @discord_client.event
     async def on_ready():
         add_to_logs(f"Discord Bot connected as {discord_client.user}")
-        print(f"? Discord Bot logged in as {discord_client.user}")
+        print(f"✅ Discord Bot logged in as {discord_client.user}")
         # Send a test message to a channel to verify it's working
         for guild in discord_client.guilds:
             for channel in guild.text_channels:
                 try:
-                    await channel.send("????? **Einstein System Initialized.** System is now monitoring this sector for transmissions.")
+                    await channel.send("👨‍🔬 **Einstein System Initialized.** System is now monitoring this sector for transmissions.")
                     print(f"DEBUG: Sent startup message to {channel.name} in {guild.name}")
                     break # Just one channel per guild
                 except:
@@ -6120,7 +6187,7 @@ async def start_discord_bot():
             await discord_client.process_commands(message)
             
             async with message.channel.typing():
-                reply_text = f"????? *Einstein here.* Analyzing your transmission in {message.channel}: '{message.content}'..."
+                reply_text = f"👨‍🔬 *Einstein here.* Analyzing your transmission in {message.channel}: '{message.content}'..."
                 
                 try:
                     # Use a slightly faster prompt for "instant" feel
@@ -6208,6 +6275,9 @@ def run_bot():
     bot_app.add_handler(CommandHandler("help", show_help))
     bot_app.add_handler(CommandHandler("stop", stop_all_actions))
     bot_app.add_handler(CommandHandler("clear", clear_chat))
+    bot_app.add_handler(CommandHandler("status", get_system_info))
+    bot_app.add_handler(CommandHandler("screenshot", take_screenshot))
+    bot_app.add_handler(CommandHandler("ss", take_screenshot))
     bot_app.add_handler(CommandHandler("files", list_workspace_files))
     
     # Cloudflare Tunnel Command
@@ -6233,12 +6303,6 @@ def run_bot():
     bot_app.add_handler(CommandHandler("time", world_time))
     bot_app.add_handler(CommandHandler("ip", ip_lookup))
     bot_app.add_handler(CommandHandler("wiki", wikipedia_search))
-    bot_app.add_handler(CommandHandler("news", get_latest_news))
-    bot_app.add_handler(CommandHandler("crypto", crypto_prices))
-    bot_app.add_handler(CommandHandler("currency", currency_converter))
-    bot_app.add_handler(CommandHandler("news", get_latest_news))
-    bot_app.add_handler(CommandHandler("crypto", crypto_prices))
-    bot_app.add_handler(CommandHandler("currency", currency_converter))
     
     # New Utility Features - Text Tools
     bot_app.add_handler(CommandHandler("translate", translate_reply))
@@ -6254,6 +6318,8 @@ def run_bot():
     bot_app.add_handler(CommandHandler("dl", video_downloader))
     bot_app.add_handler(CommandHandler("download", video_downloader))
     bot_app.add_handler(CommandHandler("continue", continue_tasks))
+    bot_app.add_handler(CommandHandler("mp3", video_to_mp3))
+    bot_app.add_handler(CommandHandler("gif", video_to_gif))
     
     # Video Streaming - Play without downloading
     bot_app.add_handler(CommandHandler("play", play_video))
@@ -6341,7 +6407,6 @@ def run_bot():
     print(f"Alternative URL: http://127.0.0.1:{WEB_PORT}/overview")
     print("=" * 50)
     
-    # Run the bot with drop_pending_updates=True to resolve Conflict errors
     bot_app.run_polling(drop_pending_updates=True)
 
 def run_discord_bot_process():
