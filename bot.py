@@ -126,65 +126,45 @@ async def setup_commands(application):
     """Set up the bot command menu in Telegram"""
     commands = [
         # System
-        BotCommand("stop", "🛑 Stop all active operations"),
-        BotCommand("clear", "🧹 Clear chat messages"),
-        BotCommand("files", "📁 List workspace files"),
+        BotCommand("start", "🚀 Wake up Einstein"),
+        BotCommand("help", "📖 Show manual"),
+        BotCommand("stop", "🛑 Emergency stop"),
+        BotCommand("status", "📊 System diagnostics"),
+        BotCommand("clear", "🧹 Clear chat"),
         
-        # Phone Control
-        BotCommand("phone", "📱 Control phone (flash, volume, etc)"),
+        # Media & Conversion
+        BotCommand("mp3", "🎵 Extract audio (Reply to video)"),
+        BotCommand("gif", "🎞️ Convert to GIF (Reply to video)"),
+        BotCommand("emoji", "🖼️ Pixel art (Reply to image)"),
+        BotCommand("playlist", "📂 Download YT Playlist"),
+        BotCommand("video", "🎬 Universal downloader"),
+        BotCommand("music", "🎵 Download music"),
+        BotCommand("yt", "🔎 YouTube search"),
         
-        # Browser & Capture
-        BotCommand("browser", "🌐 Browser control (screenshot, navigate)"),
-        BotCommand("screenshot", "📸 Desktop or web screenshot"),
+        # Tools
+        BotCommand("screenshot", "📸 Take host screenshot"),
+        BotCommand("ss", "📸 Short for screenshot"),
+        BotCommand("files", "📁 List workspace"),
+        BotCommand("browser", "🌐 Browser control"),
+        BotCommand("tunnel", "☁️ Cloudflare tunnel"),
         
-        # Search & AI
-        BotCommand("search", "🔍 Real-time web search"),
-        BotCommand("weather", "🌤️ Weather information"),
+        # AI & Search
+        BotCommand("search", "🔍 Web search"),
+        BotCommand("weather", "🌤️ Weather monitor"),
         BotCommand("ai", "🤖 Chat with OpenAI"),
-        BotCommand("ollama", "🦙 Free local AI chat"),
-        BotCommand("claude", "🧠 Chat with Claude AI"),
-        BotCommand("smart", "🧠 AI Smart - Natural language command processor"),
+        BotCommand("ollama", "🦙 Free local AI"),
+        BotCommand("gen", "🎨 Generate AI Art"),
+        BotCommand("vgen", "📽️ Generate AI Video"),
         
-        # Social Media
-        BotCommand("facebook", "📘 Facebook page control"),
-        BotCommand("youtube", "📺 YouTube channel control"),
-        BotCommand("tiktok", "🎵 TikTok account control"),
-        BotCommand("twitter", "🐦 Twitter/X posting"),
-        BotCommand("whatsapp", "💬 WhatsApp Business API"),
+        # Social & Communication
+        BotCommand("facebook", "📘 Facebook control"),
+        BotCommand("phone", "📱 Phone controller"),
+        BotCommand("discord", "💬 Discord message"),
+        BotCommand("whatsapp", "💬 WhatsApp control"),
         
-        # Developer Tools
-        BotCommand("github", "🐙 GitHub repository control"),
-        BotCommand("gmail", "📧 Gmail email control"),
-        BotCommand("discord", "💬 Send Discord message"),
-        BotCommand("slack", "💼 Send Slack message"),
-        
-        # Media
-        BotCommand("spotify", "🎵 Spotify music control"),
-        
-        # Productivity
-        BotCommand("note", "📝 Notes manager (Obsidian-like)"),
-        BotCommand("remind", "⏰ Reminders & tasks"),
-        BotCommand("calendar", "📅 Calendar management"),
-        
-        # Travel
-        BotCommand("flight", "✈️ Flight status & check-in"),
-        
-        # File Manager
-        BotCommand("file", "📁 File management"),
-        
-        # Smart Home
-        BotCommand("home", "🏠 Smart home control (Hue)"),
-        
-        # Utilities
-        BotCommand("utils", "🛠️ Utilities (QR, password, news)"),
-        BotCommand("thumb", "🖼️ AI Thumbnail Generator"),
-        BotCommand("botprofile", "🤖 Manage bot profile & photo"),
-        
-        # Language
-        BotCommand("language", "🌍 Change language / भाषा बदलें"),
-        
-        # AI Smart Command
-        BotCommand("smart", "🧠 AI Smart - Natural language command processor"),
+        # Utils & Language
+        BotCommand("utils", "🛠️ Tool dashboard"),
+        BotCommand("language", "🌍 Change language"),
     ]
     
     await application.bot.set_my_commands(commands)
@@ -847,41 +827,32 @@ async def stop_all_actions(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 async def clear_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Delete recent messages in the chat (up to 100)"""
+    """Deep deletion of all recent messages and conversation history"""
     if not await check_auth(update): return
     
     chat_id = update.effective_chat.id
-    message_id = update.effective_message.message_id
+    current_msg_id = update.message.message_id
     
-    try:
-        # Get count from args, default to 100
-        amount = 100
-        if context.args and context.args[0].isdigit():
-            amount = min(int(context.args[0]), 100)
-        
-        status_msg = await update.message.reply_text(f"🧹 **Cleaning up {amount} messages...**", parse_mode='HTML')
-        
-        deleted_count = 0
-        # Attempt to delete messages one by one
-        for i in range(amount + 1): # +1 to include the command itself
-            try:
-                await context.bot.delete_message(chat_id=chat_id, message_id=message_id - i)
-                deleted_count += 1
-            except Exception:
-                continue
-        
-        # Send a self-destructing confirmation
-        final_msg = await context.bot.send_message(
-            chat_id=chat_id, 
-            text=f"✅ **Cleaned {deleted_count} messages!**", 
-            parse_mode='HTML'
-        )
-        import asyncio
-        await asyncio.sleep(3)
-        await final_msg.delete()
-        
-    except Exception as e:
-        await update.message.reply_text(f"❌ **Clear Error:** `{str(e)}`", parse_mode='HTML')
+    # Send cleanup status
+    status_msg = await update.message.reply_text("🧹 `Einstein OS: Purging conversation photons...` ⚛️", parse_mode='HTML')
+    
+    deleted_count = 0
+    # Try to delete the last 100 messages (Telegram limit for batch deletion)
+    # We loop backwards from current message ID
+    for msg_id in range(current_msg_id, current_msg_id - 100, -1):
+        try:
+            await context.bot.delete_message(chat_id=chat_id, message_id=msg_id)
+            deleted_count += 1
+        except Exception:
+            # Skip messages that can't be deleted (older than 48h or already gone)
+            continue
+            
+    # Final notification (will be auto-deleted by user or next /clear)
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text=f"✅ **Laboratory Sanitized**\n━━━━━━━━━━━━━━━━━━━━━\n🗑️ **Entities Purged:** `{deleted_count}`\n🧠 **Chat History:** `Wiped`\n\n👨‍🔬 *\"Everything should be made as simple as possible...\"*",
+        parse_mode='HTML'
+    )
 
 async def list_workspace_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """List all files in the current workspace"""
@@ -3940,6 +3911,7 @@ async def ollama_reply(update: Update, message: str, context: ContextTypes.DEFAU
     lang = user_languages.get(user_id, 'en')
     
     ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2")
+    groq_api_key = os.getenv("GROQ_API_KEY")
     
     try:
         # Show typing status
@@ -3960,60 +3932,314 @@ async def ollama_reply(update: Update, message: str, context: ContextTypes.DEFAU
             'zh': "你是阿尔伯特·爱因斯坦，一位全才的天才。你的目标是解决用户提供的任何学术问题或疑问，包括数学、物理、化学、生物、历史、地理和所有其他学科。提供清晰、循序渐进的解决方案和专家解释。用中文回答。"
         }
         system_prompt = system_prompts.get(lang, system_prompts['en'])
-        full_prompt = f"{system_prompt}\n\nUser: {message}\nEinstein:"
-
+        
         animations = [
-            "🧠 `Accessing knowledge base...` 📚",
-            "✨ `Formulating response...` ⚛️",
+            "🧠 `Accessing cloud knowledge...` ☁️",
+            "✨ `Processing via Neural Link...` ⚡",
             "🧩 `Finalizing scientific theory...` 🔬"
         ]
         
         for anim in animations:
             try:
                 await status_msg.edit_text(anim, parse_mode='HTML')
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(0.3)
             except: pass
         
-        response = requests.post(
-            "http://localhost:11434/api/generate",
-            json={
-                "model": ollama_model,
-                "prompt": full_prompt,
-                "stream": False,
-                "options": {
-                    "num_predict": 500,
-                    "temperature": 0.7,
-                }
-            },
-            timeout=45
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            answer = result.get("response", "I seem to have lost my train of thought...")
+        # If Groq API key is available, use cloud model for speed
+        if groq_api_key and groq_api_key.strip():
+            try:
+                response = requests.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {groq_api_key.strip()}"},
+                    json={
+                        "model": "llama-3.3-70b-versatile",
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": message}
+                        ],
+                        "temperature": 0.7,
+                        "max_tokens": 1000
+                    },
+                    timeout=30
+                )
+                if response.status_code == 200:
+                    answer = response.json()['choices'][0]['message']['content']
+                else:
+                    raise Exception(f"Groq API Error: {response.status_code}")
+            except Exception as cloud_err:
+                add_to_logs(f"Cloud AI Error: {cloud_err}")
+                # Re-raise to trigger fallback
+                raise Exception("Cloud AI connection failed.")
+        else:
+            raise Exception("No Cloud API Key provided.")
             
-            # Use robust HTML escaping for AI response
-            escaped_answer = escape_html(answer)
+    except Exception as e:
+        # FALLBACK TO LOCAL OLLAMA IF CLOUD FAILS OR KEY IS MISSING
+        try:
+            await status_msg.edit_text("⚙️ `Cloud unavailable. Initializing local brain...` 🧠")
+            full_prompt = f"{system_prompt}\n\nUser: {message}\nEinstein:"
+            response = requests.post(
+                "http://localhost:11434/api/generate",
+                json={
+                    "model": ollama_model,
+                    "prompt": full_prompt,
+                    "stream": False,
+                    "options": {
+                        "num_predict": 500,
+                        "temperature": 0.7,
+                    }
+                },
+                timeout=20 # Reduced timeout for faster error reporting
+            )
+            if response.status_code == 200:
+                result = response.json()
+                answer = result.get("response", "I seem to have lost my train of thought...")
+            else:
+                raise Exception("Local brain (Ollama) is offline.")
+        except Exception as local_err:
+            error_text = str(local_err)[:100]
+            if "Max retries exceeded" in error_text:
+                error_text = "Local AI server (Ollama) is not running on your PC."
             
-            # Final Professional Styled Reply in HTML
-            attractive_reply = (
-                f"🧬 <b>Einstein System Output</b> 🧬\n"
-                f"━━━━━━━━━━━━━━━━━━━━━\n\n"
-                f"{escaped_answer}\n\n"
+            await status_msg.edit_text(
+                f"❌ **Einstein Connection Error**\n"
                 f"━━━━━━━━━━━━━━━━━━━━━\n"
-                f"👨‍🔬 <i>\"Creativity is intelligence having fun.\"</i>\n"
-                f"📥 @alberteinstein247_bot"
+                f"⚠️ **Issue:** `{error_text}`\n\n"
+                f"💡 **Solution:**\n"
+                f"1. Add `GROQ_API_KEY` to your `.env` for ultra-fast Cloud AI.\n"
+                f"2. Or, ensure **Ollama** is running locally on port 11434.",
+                parse_mode='HTML'
+            )
+            return
+
+    # Use robust HTML escaping for AI response
+    try:
+        escaped_answer = escape_html(answer)
+        attractive_reply = (
+            f"🧬 <b>Einstein System Output</b> 🧬\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"{escaped_answer}\n\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n"
+            f"👨‍🔬 <i>\"Creativity is intelligence having fun.\"</i>\n"
+            f"📥 @alberteinstein247_bot"
+        )
+        await status_msg.edit_text(attractive_reply, parse_mode='HTML')
+    except Exception as formatting_err:
+        await status_msg.edit_text(f"❌ `Formatting error: {formatting_err}`")
+
+async def image_to_emoji(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Convert an image to a high-resolution Emoji Mosaic (Reply to an image with /emoji)"""
+    if not update.message.reply_to_message or not (update.message.reply_to_message.photo or update.message.reply_to_message.document):
+        await update.message.reply_text("🖼️ **Reply to an image with `/emoji` to create a high-res mosaic!**", parse_mode='HTML')
+        return
+    
+    status_msg = await update.message.reply_text("🧬 `Einstein OS: Initializing neural mosaic synthesis...` 🧪", parse_mode='HTML')
+    
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+        import os
+        import numpy as np
+        
+        # Download the image
+        photo = update.message.reply_to_message.photo[-1] if update.message.reply_to_message.photo else update.message.reply_to_message.document
+        image_file = await photo.get_file()
+        
+        download_dir = "d:/clow bot/downloads"
+        os.makedirs(download_dir, exist_ok=True)
+        img_path = f"{download_dir}/mosaic_source_{update.message.message_id}.png"
+        await image_file.download_to_drive(img_path)
+        
+        await status_msg.edit_text("🎨 `Analyzing pixel data & photon mapping...` 🌈", parse_mode='HTML')
+        
+        # Open source image
+        source_img = Image.open(img_path).convert('RGB')
+        
+        # Mosaic parameters - ULTIMATE CLARITY
+        tile_size = 10  # Very small tiles for maximum detail
+        target_width_tiles = 200 # Extreme density for photographic look
+        aspect_ratio = source_img.height / source_img.width
+        target_height_tiles = int(target_width_tiles * aspect_ratio)
+        
+        # Resize source to tile dimensions using high-quality LANCZOS
+        small_img = source_img.resize((target_width_tiles, target_height_tiles), Image.LANCZOS)
+        
+        # Output image dimensions
+        output_width = target_width_tiles * tile_size
+        output_height = target_height_tiles * tile_size
+        output_img = Image.new('RGB', (output_width, output_height), color=(255, 255, 255))
+        draw = ImageDraw.Draw(output_img)
+        
+        # Load a font that supports emojis (system font fallback)
+        try:
+            # Common Windows emoji font - optimized size for 10px tiles
+            font = ImageFont.truetype("seguiemj.ttf", 9) 
+        except:
+            try:
+                font = ImageFont.truetype("NotoColorEmoji.ttf", 9)
+            except:
+                font = ImageFont.load_default()
+
+        # VIBRANT Emoji Profiles - High saturation for "Same Same" look
+        emoji_profiles = {
+            # BLACK / DARK
+            (0, 0, 0): ["⬛", "🖤", "🏴", "🔌", "🎮"],
+            (30, 30, 30): ["🌑", "🎱", "🎩", "💣", "🖤"],
+            (60, 60, 60): ["🌑", "📓", "🔌", "👣", "🦍"],
+            
+            # WHITE / LIGHT
+            (255, 255, 255): ["⬜", "🤍", "🥛", "🍙", "🥚"],
+            (235, 235, 235): ["🔘", "🏐", "🥚", "🏐", "🤍"],
+            (210, 210, 210): ["🥈", "💿", "🖱️", "🐚", "📎"],
+            
+            # BROWNS / TANS / GREY-BROWNS (Crucial for cat fur)
+            (70, 50, 40): ["🟫", "🤎", "🧸", "🪵", "🐻"],
+            (100, 80, 70): ["🦦", "🦉", "🟫", "🪵", "🏺"],
+            (130, 110, 90): ["🎨", "🥨", "🥔", "🥜", "🤎"],
+            (160, 140, 120): ["🥞", "🍞", "🧀", "🧇", "🥯"],
+            (190, 170, 150): ["📜", "🎨", "🥨", "🥔", "🥐"],
+            
+            # YELLOWS
+            (255, 215, 0): ["🌟", "🟡", "💛", "✨", "🌞"],
+            (255, 255, 50): ["🍌", "🍋", "🌽", "🧀", "💛"],
+            
+            # REDS
+            (255, 0, 0): ["🔴", "❤️", "🌹", "🍎", "🧧"],
+            (180, 0, 0): ["🏮", "🧨", "🥊", "🥩", "🍷"],
+            
+            # GREENS
+            (0, 255, 0): ["🟢", "💚", "🍀", "🌿", "🍃"],
+            (0, 150, 0): ["🌳", "🌴", "🌵", "🥦", "🍏"],
+            
+            # BLUES
+            (0, 0, 255): ["🔵", "💙", "💎", "🐬", "🐳"],
+            (100, 180, 255): ["🧊", "🌊", "🌌", "🏙️", "🌀"],
+            
+            # PINK/PURPLE
+            (255, 105, 180): ["💕", "🌸", "🐷", "👅", "💓"]
+        }
+
+        def get_best_emoji(r, g, b):
+            # Sharp Contrast and Saturation Boost
+            def enhance(c):
+                c = c / 255.0
+                # Increase contrast
+                if c < 0.5: c = (c**1.3)
+                else: c = (c**0.7)
+                # Increase saturation slightly
+                return min(255, max(0, int(c * 255)))
+            
+            r, g, b = enhance(r), enhance(g), enhance(b)
+            
+            min_dist = float('inf')
+            best_group = ["⬛"]
+            
+            for profile_rgb, emoji_list in emoji_profiles.items():
+                # Perceptual matching weight
+                dr = (r - profile_rgb[0]) * 0.30
+                dg = (g - profile_rgb[1]) * 0.59
+                db = (b - profile_rgb[2]) * 0.11
+                dist = dr*dr + dg*dg + db*db
+                
+                if dist < min_dist:
+                    min_dist = dist
+                    best_group = emoji_list
+            
+            return np.random.choice(best_group)
+
+        for y in range(target_height_tiles):
+            if y % 10 == 0:
+                progress = int((y / target_height_tiles) * 100)
+                await status_msg.edit_text(f"🧩 `Rendering mosaic... {progress}%` 🎨", parse_mode='HTML')
+            
+            for x in range(target_width_tiles):
+                r, g, b = small_img.getpixel((x, y))
+                emoji = get_best_emoji(r, g, b)
+                
+                # Position for the tile
+                pos_x = x * tile_size
+                pos_y = y * tile_size
+                
+                # Draw the emoji
+                # Note: PIL's text drawing for emojis can be tricky depending on OS/font
+                # We'll draw it centered in the tile
+                draw.text((pos_x + 2, pos_y + 2), emoji, font=font, embedded_color=True)
+
+        await status_msg.edit_text("✨ `Polishing visual output...` 🖼️", parse_mode='HTML')
+        
+        mosaic_path = f"{download_dir}/highres_mosaic_{update.message.message_id}.png"
+        output_img.save(mosaic_path, "PNG")
+        
+        with open(mosaic_path, 'rb') as f:
+            await update.message.reply_document(
+                document=f, 
+                caption="🖼️ **High-Resolution Emoji Mosaic**\n━━━━━━━━━━━━━━━━━━━━━\n✨ *Zoom in to see the emojis!*\n\n👨‍🔬 *\"God does not play dice with the universe.\"*",
+                parse_mode='HTML'
             )
             
-            await status_msg.edit_text(attractive_reply, parse_mode='HTML')
-        else:
-            await status_msg.edit_text("❌ `Einstein Error: Local brain (Ollama) is offline.` 🧠")
+        # Cleanup
+        os.remove(img_path)
+        os.remove(mosaic_path)
+        await status_msg.delete()
+        
     except Exception as e:
-        error_text = str(e)[:100]
-        if 'status_msg' in locals():
-            await status_msg.edit_text(f"❌ `Anomaly detected: {error_text}`", parse_mode='HTML')
-        else:
-            await update.message.reply_text(f"❌ `Anomaly detected: {error_text}`", parse_mode='HTML')
+        import traceback
+        print(f"High-Res Emoji Error: {traceback.format_exc()}")
+        await status_msg.edit_text(f"❌ **Synthesis Error:** `{str(e)[:100]}`", parse_mode='HTML')
+        
+
+async def clean_bot_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Clean all temporary files and reset bot state"""
+    if not await check_auth(update): return
+    
+    status_msg = await update.message.reply_text("🧹 `Einstein OS: Initializing deep molecular cleanup...` 🧪", parse_mode='HTML')
+    
+    try:
+        # 1. Clear Global States
+        global bot_logs, user_commands_history, active_users_set
+        bot_logs = []
+        user_commands_history = []
+        active_users_set = {}
+        
+        # 2. Define directories to clean
+        dirs_to_clean = [
+            "d:/clow bot/downloads",
+            "d:/clow bot/media_analysis",
+            "d:/clow bot/notes",
+            "d:/clow bot/screenshots"
+        ]
+        
+        files_deleted = 0
+        dirs_reset = 0
+        
+        import shutil
+        for directory in dirs_to_clean:
+            if os.path.exists(directory):
+                # Count files before deletion
+                for root, _, files in os.walk(directory):
+                    files_deleted += len(files)
+                
+                # Remove and recreate
+                shutil.rmtree(directory)
+                os.makedirs(directory, exist_ok=True)
+                dirs_reset += 1
+        
+        # 3. Clear __pycache__ if exists in current dir
+        if os.path.exists("__pycache__"):
+            shutil.rmtree("__pycache__")
+            dirs_reset += 1
+
+        await status_msg.edit_text(
+            f"✅ **Sanitization Complete**\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n"
+            f"📂 **Directories Reset:** `{dirs_reset}`\n"
+            f"🗑️ **Files Purged:** `{files_deleted}`\n"
+            f"🧠 **Memory Buffers:** `Cleared`\n\n"
+            f"👨‍🔬 *\"A clean laboratory is a productive laboratory.\"*",
+            parse_mode='HTML'
+        )
+        
+    except Exception as e:
+        await status_msg.edit_text(f"❌ **Sanitization Error:** `{str(e)[:100]}`", parse_mode='HTML')
 
 async def generate_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Generate images with stylish animated status"""
@@ -4102,19 +4328,47 @@ async def video_to_mp3(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.UPLOAD_VOICE)
         
+        # Get video metadata for better naming
+        reply_msg = update.message.reply_to_message
+        video = reply_msg.video or reply_msg.document
+        
+        # Determine the best title for the audio file
+        original_name = "audio_extraction"
+        
+        # 1. Try to get title from video caption (most accurate for user-sent videos)
+        if reply_msg.caption:
+            # Clean caption: remove emojis, special chars, and hashtags
+            import re
+            clean_caption = reply_msg.caption.split('\n')[0] # Take first line
+            clean_caption = re.sub(r'#\w+', '', clean_caption) # Remove hashtags
+            clean_caption = "".join([c for c in clean_caption if c.isalnum() or c in (' ', '-', '_')]).strip()
+            if clean_caption:
+                original_name = clean_caption[:100]
+        
+        # 2. Fallback to filename if caption is empty or invalid
+        elif reply_msg.video and reply_msg.video.file_name:
+            original_name = os.path.splitext(reply_msg.video.file_name)[0]
+        elif reply_msg.document and reply_msg.document.file_name:
+            original_name = os.path.splitext(reply_msg.document.file_name)[0]
+
+        # Final safety check for empty name
+        if not original_name or original_name.strip() == "":
+            original_name = f"audio_{update.message.message_id}"
+
         # Download the video
-        video_file = await (update.message.reply_to_message.video or update.message.reply_to_message.document).get_file()
+        video_file = await video.get_file()
         download_dir = "d:/clow bot/downloads"
         os.makedirs(download_dir, exist_ok=True)
         
-        video_path = f"{download_dir}/temp_sonic_{update.message.message_id}.mp4"
-        mp3_path = video_path.replace('.mp4', '.mp3')
+        # Use a safe temp path for processing but the final name for the output
+        temp_video_path = f"{download_dir}/temp_proc_{update.message.message_id}.mp4"
+        mp3_path = f"{download_dir}/{original_name}.mp3"
         
-        await video_file.download_to_drive(video_path)
+        await video_file.download_to_drive(temp_video_path)
         await status_msg.edit_text("⚡ `Processing frequency waves...` 🚀", parse_mode='HTML')
         
         import moviepy as mp
-        clip = mp.VideoFileClip(video_path)
+        clip = mp.VideoFileClip(temp_video_path)
         clip.audio.write_audiofile(mp3_path)
         clip.close()
         
@@ -4123,13 +4377,14 @@ async def video_to_mp3(update: Update, context: ContextTypes.DEFAULT_TYPE):
         with open(mp3_path, 'rb') as f:
             await update.message.reply_audio(
                 audio=f, 
+                title=original_name,
                 caption=f"🎵 **Audio Extracted Successfully**\n━━━━━━━━━━━━━━━━━━━━━\n👨‍🔬 *\"Everything is vibration.\"*",
                 parse_mode='HTML'
             )
         
         # Cleanup
-        os.remove(video_path)
-        os.remove(mp3_path)
+        if os.path.exists(temp_video_path): os.remove(temp_video_path)
+        if os.path.exists(mp3_path): os.remove(mp3_path)
         await status_msg.delete()
         
     except Exception as e:
@@ -4153,10 +4408,16 @@ async def video_to_gif(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await video_file.download_to_drive(video_path)
         
         import moviepy as mp
-        clip = mp.VideoFileClip(video_path).resize(width=480) # Resize for smaller file size
+        # MoviePy v2.0+ uses .size[0] for width and .resized() instead of .resize()
+        clip = mp.VideoFileClip(video_path)
+        
+        # Check width via .size[0] (width, height)
+        if clip.size[0] > 480:
+            clip = clip.resized(width=480)
+        
         # Take first 10 seconds only for GIF to avoid huge files
         if clip.duration > 10:
-            clip = clip.subclip(0, 10)
+            clip = clip.subclipped(0, 10)
         
         clip.write_gif(gif_path, fps=10)
         clip.close()
@@ -6275,9 +6536,11 @@ def run_bot():
     bot_app.add_handler(CommandHandler("help", show_help))
     bot_app.add_handler(CommandHandler("stop", stop_all_actions))
     bot_app.add_handler(CommandHandler("clear", clear_chat))
+    bot_app.add_handler(CommandHandler("clean", clean_bot_data))
     bot_app.add_handler(CommandHandler("status", get_system_info))
     bot_app.add_handler(CommandHandler("screenshot", take_screenshot))
     bot_app.add_handler(CommandHandler("ss", take_screenshot))
+    bot_app.add_handler(CommandHandler("emoji", image_to_emoji))
     bot_app.add_handler(CommandHandler("files", list_workspace_files))
     
     # Cloudflare Tunnel Command
