@@ -4,6 +4,12 @@
 ![GitHub stars](https://img.shields.io/github/stars/SURJO99exe/Einstein-Bot-?style=for-the-badge)
 ![GitHub license](https://img.shields.io/github/license/SURJO99exe/Einstein-Bot-?style=for-the-badge)
 
+## 🏆 Achievements
+[![GitHub Achievements](https://github-profile-trophy.vercel.app/?username=SURJO99exe&theme=radical&column=7)](https://github.com/ryo-ma/github-profile-trophy)
+
+---
+*Last updated: Thursday 19 March 2026 15:20:00 UTC*
+
 Einstein OS is a sophisticated multi-functional Telegram bot designed to be your personal laboratory assistant. It combines cutting-edge AI, high-fidelity media processing, and advanced system automation into a single, intuitive interface.
 
 ## 🚀 Key Laboratory Upgrades (v2.0)

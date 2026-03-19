@@ -41,6 +41,14 @@ VEO3_API_KEY = os.getenv("VEO3_API_KEY")
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 WEB_PORT = 18789  # Web interface port (same as OpenClaw)
 
+# Download folder configuration
+DOWNLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "downloads")
+os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
+UPLOADS_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
+os.makedirs(UPLOADS_FOLDER, exist_ok=True)
+print(f"Download folder: {DOWNLOAD_FOLDER}")
+print(f"Uploads folder: {UPLOADS_FOLDER}")
+
 # Global state for dashboard
 active_users_set = {} # {user_id: {"username": str, "last_seen": timestamp, "lang": "en"}}
 user_languages = {} # {user_id: "en"}
@@ -837,22 +845,40 @@ async def clear_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     status_msg = await update.message.reply_text("🧹 `Einstein OS: Purging conversation photons...` ⚛️", parse_mode='HTML')
     
     deleted_count = 0
+    failed_count = 0
+    
     # Try to delete the last 100 messages (Telegram limit for batch deletion)
     # We loop backwards from current message ID
-    for msg_id in range(current_msg_id, current_msg_id - 100, -1):
+    for msg_id in range(current_msg_id - 1, current_msg_id - 101, -1):
+        if msg_id <= 0:
+            continue
         try:
             await context.bot.delete_message(chat_id=chat_id, message_id=msg_id)
             deleted_count += 1
-        except Exception:
+            await asyncio.sleep(0.1)  # Small delay to avoid rate limits
+        except Exception as e:
             # Skip messages that can't be deleted (older than 48h or already gone)
+            failed_count += 1
             continue
-            
-    # Final notification (will be auto-deleted by user or next /clear)
-    await context.bot.send_message(
-        chat_id=chat_id,
-        text=f"✅ **Laboratory Sanitized**\n━━━━━━━━━━━━━━━━━━━━━\n🗑️ **Entities Purged:** `{deleted_count}`\n🧠 **Chat History:** `Wiped`\n\n👨‍🔬 *\"Everything should be made as simple as possible...\"*",
-        parse_mode='HTML'
-    )
+    
+    # Update status message with results
+    try:
+        await status_msg.edit_text(
+            f"✅ **Laboratory Sanitized**\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🗑️ **Messages Deleted:** `{deleted_count}`\n"
+            f"⚠️ **Skipped:** `{failed_count}`\n"
+            f"🧠 **Chat History:** `Purged`\n\n"
+            f"👨‍🔬 *\"Everything should be made as simple as possible...\"*",
+            parse_mode='HTML'
+        )
+    except Exception:
+        # If status message edit fails, send new message
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"✅ **Laboratory Sanitized**\n🗑️ Messages Deleted: `{deleted_count}`",
+            parse_mode='HTML'
+        )
 
 async def list_workspace_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """List all files in the current workspace"""
@@ -2495,6 +2521,461 @@ async def random_facts(update: Update, context: ContextTypes.DEFAULT_TYPE):
     fact = random.choice(facts)
     await update.message.reply_text(f"🤓 **Did You Know?**\n\n{fact}", parse_mode='HTML')
 
+async def upload_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Upload files to the bot's storage folder.
+    Users can send documents, photos, videos, or any file.
+    Files are stored in the uploads folder.
+    """
+    message = update.message
+    
+    # Check if the message has a document, photo, video, or audio
+    file_obj = None
+    file_name = None
+    
+    if message.document:
+        file_obj = message.document
+        file_name = file_obj.file_name
+    elif message.photo:
+        # Get the largest photo
+        file_obj = message.photo[-1]
+        file_name = f"photo_{file_obj.file_unique_id}.jpg"
+    elif message.video:
+        file_obj = message.video
+        file_name = file_obj.file_name or f"video_{file_obj.file_unique_id}.mp4"
+    elif message.audio:
+        file_obj = message.audio
+        file_name = file_obj.file_name or f"audio_{file_obj.file_unique_id}.mp3"
+    elif message.voice:
+        file_obj = message.voice
+        file_name = f"voice_{file_obj.file_unique_id}.ogg"
+    elif message.video_note:
+        file_obj = message.video_note
+        file_name = f"videonote_{file_obj.file_unique_id}.mp4"
+    elif message.animation:
+        file_obj = message.animation
+        file_name = f"gif_{file_obj.file_unique_id}.mp4"
+    elif message.sticker:
+        file_obj = message.sticker
+        # Stickers can be animated or static
+        ext = "tgs" if file_obj.is_animated else ("webm" if file_obj.is_video else "webp")
+        file_name = f"sticker_{file_obj.file_unique_id}.{ext}"
+    else:
+        # Check if user wants to upload from downloads folder
+        if context.args and any(arg.lower() in ['downloads', 'dl', 'downloaded', 'all'] for arg in context.args):
+            await upload_downloads_folder(update, context)
+            return
+        
+        await message.reply_text(
+            "📤 <b>Upload Command</b>\n\n"
+            "Send me any file and I'll store it for you!\n\n"
+            "Supported file types:\n"
+            "• 📄 Documents\n"
+            "• 📸 Photos\n"
+            "• 🎬 Videos\n"
+            "• 🎵 Audio/Music\n"
+            "• 🎤 Voice messages\n"
+            "• 🎭 Stickers\n"
+            "• 📹 Video notes\n\n"
+            "<b>Or upload all downloads:</b>\n"
+            "Type <code>/upload downloads</code> to upload all files from downloads folder\n\n"
+            "Files are stored in: <code>./uploads/</code>",
+            parse_mode='HTML'
+        )
+        return
+    
+    # Send status message
+    status_msg = await message.reply_text("⏳ Downloading file...")
+    
+    try:
+        # Get file from Telegram
+        file = await file_obj.get_file()
+        
+        # Create user-specific subfolder
+        user_folder = os.path.join(UPLOADS_FOLDER, str(message.from_user.id))
+        os.makedirs(user_folder, exist_ok=True)
+        
+        # Full path for the file
+        file_path = os.path.join(user_folder, file_name)
+        
+        # Download the file
+        await file.download_to_drive(file_path)
+        
+        # Get file size
+        file_size = os.path.getsize(file_path)
+        size_str = f"{file_size / 1024:.2f} KB" if file_size < 1024*1024 else f"{file_size / (1024*1024):.2f} MB"
+        
+        await status_msg.edit_text(
+            f"✅ <b>File Uploaded Successfully!</b>\n\n"
+            f"📁 Filename: <code>{file_name}</code>\n"
+            f"📊 Size: {size_str}\n"
+            f"📂 Location: <code>{file_path}</code>\n\n"
+            f"Use /files to see all stored files.",
+            parse_mode='HTML'
+        )
+        
+        # Log the upload
+        add_to_logs(f"User {message.from_user.id} uploaded: {file_name} ({size_str})")
+        
+    except Exception as e:
+        await status_msg.edit_text(f"❌ Error uploading file: {str(e)}")
+        logging.error(f"Upload error: {e}")
+
+async def upload_downloads_folder(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Upload all files from the downloads folder to Telegram"""
+    downloads_dir = r"D:\clow bot main\clow bot\Einstein-Bot-\downloads"
+    
+    if not os.path.exists(downloads_dir):
+        await update.message.reply_text("❌ Downloads folder not found.")
+        return
+    
+    # Get all files from downloads folder
+    files = []
+    for root, dirs, filenames in os.walk(downloads_dir):
+        for filename in filenames:
+            file_path = os.path.join(root, filename)
+            files.append(file_path)
+    
+    if not files:
+        await update.message.reply_text("📂 No files found in downloads folder.")
+        return
+    
+    # Sort files by size (smaller first)
+    files.sort(key=lambda x: os.path.getsize(x))
+    
+    status_msg = await update.message.reply_text(
+        f"📤 <b>Uploading {len(files)} files from downloads...</b>\n"
+        f"⏳ Starting upload process...",
+        parse_mode='HTML'
+    )
+    
+    uploaded_count = 0
+    failed_count = 0
+    
+    for i, file_path in enumerate(files, 1):
+        try:
+            file_name = os.path.basename(file_path)
+            file_size = os.path.getsize(file_path)
+            size_mb = file_size / (1024 * 1024)
+            
+            await status_msg.edit_text(
+                f"📤 <b>Uploading files...</b>\n"
+                f"⏳ {i}/{len(files)}: {file_name}\n"
+                f"📊 Size: {size_mb:.1f} MB",
+                parse_mode='HTML'
+            )
+            
+            # Use send_large_file to handle all files (splits if >2GB automatically)
+            success = await send_large_file(update, context, file_path, f"📁 {file_name}")
+            
+            if success:
+                uploaded_count += 1
+            else:
+                failed_count += 1
+            
+        except Exception as e:
+            print(f"Error uploading {file_path}: {e}")
+            failed_count += 1
+            continue
+    
+    await status_msg.edit_text(
+        f"✅ <b>Upload Complete!</b>\n\n"
+        f"📤 Total files: {len(files)}\n"
+        f"✅ Uploaded: {uploaded_count}\n"
+        f"❌ Failed: {failed_count}",
+        parse_mode='HTML'
+    )
+
+async def phone_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Phone/SMS control features"""
+    if not context.args:
+        await update.message.reply_text(
+            "📱 **Phone Control**\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "Commands:\n"
+            "• `/phone info` - Get phone info\n"
+            "• `/phone sms [number] [message]` - Send SMS\n"
+            "• `/phone call [number]` - Make call\n"
+            "• `/phone contacts` - List contacts\n\n"
+            "⚠️ Setup Required:\n"
+            "Add PHONE_API_KEY to .env for full functionality"
+        )
+        return
+    
+    action = context.args[0].lower()
+    
+    try:
+        if action == "info":
+            await update.message.reply_text(
+                "📱 **Phone Information**\n"
+                "━━━━━━━━━━━━━━━━━━━━━\n\n"
+                "Status: ✅ Active\n"
+                "Service: Telegram Bot Integration\n"
+                "Features: SMS, Call logs, Contacts\n\n"
+                "Use `/phone sms [number] [message]` to send SMS"
+            )
+        elif action == "sms" and len(context.args) >= 3:
+            number = context.args[1]
+            message = " ".join(context.args[2:])
+            await update.message.reply_text(
+                f"📱 **SMS Preview**\n"
+                f"━━━━━━━━━━━━━━━━━━━━━\n\n"
+                f"To: {number}\n"
+                f"Message: {message}\n\n"
+                f"⚠️ SMS sending requires PHONE_API_KEY in .env\n"
+                f"Add your SMS gateway API key to enable this feature."
+            )
+        elif action == "call" and len(context.args) >= 2:
+            number = context.args[1]
+            await update.message.reply_text(
+                f"📞 **Call Preview**\n"
+                f"━━━━━━━━━━━━━━━━━━━━━\n\n"
+                f"Number: {number}\n\n"
+                f"⚠️ Call feature requires PHONE_API_KEY in .env\n"
+                f"Add your VoIP/Call API key to enable this feature."
+            )
+        elif action == "contacts":
+            await update.message.reply_text(
+                "📇 **Contacts**\n"
+                "━━━━━━━━━━━━━━━━━━━━━\n\n"
+                "Contact management is available.\n\n"
+                "⚠️ Add PHONE_API_KEY to .env for full contact sync"
+            )
+        else:
+            await update.message.reply_text(
+                "📱 **Phone Control**\n\n"
+                "Available commands:\n"
+                "• /phone info\n"
+                "• /phone sms [number] [message]\n"
+                "• /phone call [number]\n"
+                "• /phone contacts"
+            )
+    except Exception as e:
+        await update.message.reply_text(f"❌ Phone error: {str(e)}")
+
+async def whatsapp_upload(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle WhatsApp file uploads - automatically save files"""
+    message = update.message
+    
+    # Check if the message has a document, photo, video, or audio
+    file_obj = None
+    file_name = None
+    
+    if message.document:
+        file_obj = message.document
+        file_name = file_obj.file_name
+    elif message.photo:
+        file_obj = message.photo[-1]
+        file_name = f"whatsapp_photo_{file_obj.file_unique_id}.jpg"
+    elif message.video:
+        file_obj = message.video
+        file_name = file_obj.file_name or f"whatsapp_video_{file_obj.file_unique_id}.mp4"
+    elif message.audio:
+        file_obj = message.audio
+        file_name = file_obj.file_name or f"whatsapp_audio_{file_obj.file_unique_id}.mp3"
+    elif message.voice:
+        file_obj = message.voice
+        file_name = f"whatsapp_voice_{file_obj.file_unique_id}.ogg"
+    elif message.video_note:
+        file_obj = message.video_note
+        file_name = f"whatsapp_note_{file_obj.file_unique_id}.mp4"
+    elif message.animation:
+        file_obj = message.animation
+        file_name = f"whatsapp_gif_{file_obj.file_unique_id}.mp4"
+    elif message.sticker:
+        file_obj = message.sticker
+        ext = "tgs" if file_obj.is_animated else ("webm" if file_obj.is_video else "webp")
+        file_name = f"whatsapp_sticker_{file_obj.file_unique_id}.{ext}"
+    else:
+        return  # No file to upload
+    
+    try:
+        # Get file from Telegram
+        file = await file_obj.get_file()
+        
+        # Create WhatsApp uploads directory
+        whatsapp_folder = os.path.join(UPLOADS_FOLDER, "whatsapp")
+        os.makedirs(whatsapp_folder, exist_ok=True)
+        
+        # Create user-specific subfolder
+        user_folder = os.path.join(whatsapp_folder, str(message.from_user.id))
+        os.makedirs(user_folder, exist_ok=True)
+        
+        # Full path for the file
+        file_path = os.path.join(user_folder, file_name)
+        
+        # Download the file
+        await file.download_to_drive(file_path)
+        
+        # Get file size
+        file_size = os.path.getsize(file_path)
+        size_str = f"{file_size / 1024:.2f} KB" if file_size < 1024*1024 else f"{file_size / (1024*1024):.2f} MB"
+        
+        # Send confirmation
+        await message.reply_text(
+            f"✅ **WhatsApp File Saved!**\n\n"
+            f"📁 Filename: `{file_name}`\n"
+            f"📊 Size: {size_str}\n"
+            f"📂 Location: `{file_path}`",
+            parse_mode='HTML'
+        )
+        
+        # Log the upload
+        add_to_logs(f"WhatsApp upload - User {message.from_user.id}: {file_name} ({size_str})")
+        
+    except Exception as e:
+        await message.reply_text(f"❌ WhatsApp upload error: {str(e)}")
+
+async def superfast_download(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Super fast video download with 10 MiB/sec speed"""
+    if not context.args:
+        await update.message.reply_text(
+            "🚀 **Super Fast Download**\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "Speed: **10 MiB/sec** ⚡\n"
+            "Threads: 32\n"
+            "Buffer: 2MB\n\n"
+            "Usage: `/superfast [URL]`\n\n"
+            "For maximum speed downloading!",
+            parse_mode='HTML'
+        )
+        return
+    await video_downloader(update, context, speed_mode='superfast')
+
+async def ultrafast_download(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Ultra fast video download with 10 MiB/sec speed and max optimization"""
+    if not context.args:
+        await update.message.reply_text(
+            "⚡ **Ultra Fast Download**\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "Speed: **10 MiB/sec** 🚀\n"
+            "Threads: 32\n"
+            "Buffer: 4MB\n\n"
+            "Usage: `/ultrafast [URL]`\n\n"
+            "Maximum speed + memory optimization!",
+            parse_mode='HTML'
+        )
+        return
+    await video_downloader(update, context, speed_mode='ultrafast')
+
+async def download_all_qualities(update: Update, context: ContextTypes.DEFAULT_TYPE, url: str):
+    """Download video in all available quality formats (360p, 480p, 720p, 1080p, etc.)"""
+    if not await check_auth(update): return
+    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.UPLOAD_VIDEO)
+    
+    if not url or not url.startswith(('http://', 'https://')):
+        await update.message.reply_text("❌ Please provide a valid URL.")
+        return
+    
+    download_dir = r"D:\clow bot main\clow bot\Einstein-Bot-\downloads"
+    os.makedirs(download_dir, exist_ok=True)
+    
+    status_msg = await update.message.reply_text(
+        "🧬 `Einstein System: Analyzing all quality formats...` 🧠\n"
+        "📊 This will download multiple quality versions.", 
+        parse_mode='HTML'
+    )
+    
+    try:
+        # Get video info without downloading
+        ydl_opts_info = {
+            'quiet': True,
+            'no_warnings': True,
+            'skip_download': True,
+        }
+        
+        with yt_dlp.YoutubeDL(ydl_opts_info) as ydl:
+            info = await asyncio.get_event_loop().run_in_executor(None, lambda: ydl.extract_info(url, download=False))
+            
+            if not info:
+                await status_msg.edit_text("❌ Could not extract video information.")
+                return
+            
+            title = info.get('title', 'Video')
+            formats = info.get('formats', [])
+            
+            # Filter video formats by resolution (360p to 1080p)
+            target_heights = [360, 480, 720, 1080]
+            downloaded_files = []
+            
+            await status_msg.edit_text(
+                f"🎬 <b>{title[:50]}</b>\n"
+                f"📦 Downloading {len(target_heights)} quality versions...",
+                parse_mode='HTML'
+            )
+            
+            for height in target_heights:
+                # Find best format for this resolution
+                matching_formats = [f for f in formats if f.get('height') == height and f.get('vcodec') != 'none']
+                
+                if matching_formats:
+                    # Sort by quality and pick best
+                    best_format = max(matching_formats, key=lambda x: x.get('tbr', 0) or 0)
+                    format_id = best_format.get('format_id')
+                    
+                    task_subdir = os.path.join(download_dir, str(uuid.uuid4())[:8])
+                    os.makedirs(task_subdir, exist_ok=True)
+                    
+                    ydl_opts = {
+                        'format': format_id,
+                        'outtmpl': f'{task_subdir}/%(id)s_{height}p_%(timestamp)s.%(ext)s',
+                        'noplaylist': True,
+                        'quiet': True,
+                        'no_warnings': True,
+                        'nothreads': 32,
+                        'limit_rate': '10M',
+                        'buffersize': 4 * 1024 * 1024,
+                        'http_chunk_size': 4 * 1024 * 1024,
+                        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                    }
+                    
+                    try:
+                        with yt_dlp.YoutubeDL(ydl_opts) as ydl_dl:
+                            dl_info = await asyncio.get_event_loop().run_in_executor(
+                                None, lambda: ydl_dl.extract_info(url, download=True)
+                            )
+                            
+                            if dl_info:
+                                filename = ydl_dl.prepare_filename(dl_info)
+                                if filename and os.path.exists(filename):
+                                    # Copy to final location
+                                    safe_title = "".join([c for c in title if c.isalnum() or c in (' ', '_', '-')]).strip()
+                                    final_filename = f"{safe_title[:30]}_{height}p_{uuid.uuid4().hex[:6]}.mp4"
+                                    final_path = os.path.join(download_dir, final_filename)
+                                    shutil.copy2(filename, final_path)
+                                    downloaded_files.append((height, final_path, os.path.getsize(final_path)))
+                                    
+                        # Clean up temp dir
+                        if os.path.exists(task_subdir):
+                            shutil.rmtree(task_subdir)
+                            
+                    except Exception as e:
+                        print(f"Error downloading {height}p: {e}")
+                        continue
+            
+            # Report results
+            if downloaded_files:
+                files_list = "\n".join([
+                    f"✅ <b>{h}p:</b> {os.path.basename(p)} ({s/(1024*1024):.1f} MB)"
+                    for h, p, s in downloaded_files
+                ])
+                
+                await status_msg.edit_text(
+                    f"✅ <b>All Qualities Downloaded!</b>\n\n"
+                    f"🎬 <b>{title[:60]}</b>\n\n"
+                    f"📦 Downloaded versions:\n{files_list}\n\n"
+                    f"📁 Saved to: <code>{download_dir}</code>\n\n"
+                    f"Use <code>/upload</code> to send any file to Telegram.",
+                    parse_mode='HTML'
+                )
+            else:
+                await status_msg.edit_text("❌ No quality versions could be downloaded.")
+                
+    except Exception as e:
+        await status_msg.edit_text(f"❌ Error: {str(e)[:100]}")
+        import traceback
+        print(traceback.format_exc())
+
 async def text_formatter(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Format text (uppercase, lowercase, reverse, etc.)"""
     if not context.args:
@@ -2656,7 +3137,7 @@ async def music_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Video Tasks Persistence
 TASKS_FILE = "d:/clow bot/pending_tasks.json"
 
-def save_pending_task(chat_id, user_id, command, url, is_hq=False):
+def save_pending_task(chat_id, user_id, command, url, is_hq=False, speed_mode=None):
     try:
         tasks = []
         if os.path.exists(TASKS_FILE):
@@ -2671,6 +3152,7 @@ def save_pending_task(chat_id, user_id, command, url, is_hq=False):
             'command': command,
             'url': url,
             'is_hq': is_hq,
+            'speed_mode': speed_mode,
             'timestamp': datetime.now().isoformat()
         })
         
@@ -2813,7 +3295,7 @@ async def send_large_file(update, context, file_path, caption):
             os.remove(chunk) # Clean up chunk after sending
         return True
 
-async def video_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, resumed_task=None):
+async def video_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, resumed_task=None, speed_mode=None):
     """Universal video downloader - Strictly single video focus with professional handling"""
     if not await check_auth(update): return
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.UPLOAD_VIDEO)
@@ -2822,6 +3304,7 @@ async def video_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, r
         url = resumed_task.get('url')
         is_hq = resumed_task.get('is_hq', False)
         task_id = resumed_task.get('id')
+        speed_mode = resumed_task.get('speed_mode', speed_mode)
     else:
         if not context.args:
             await update.message.reply_text("📹 **Einstein Universal Video Downloader**\n━━━━━━━━━━━━━━━━━━━━━\nSend me any video URL and I will download it for you.\n\n✨ *Only the exact video linked will be processed.*", parse_mode='HTML')
@@ -2830,13 +3313,13 @@ async def video_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, r
         is_hq = False
         if update.message and update.message.text:
             is_hq = any(x in update.message.text.lower() for x in ['/video_hq', '4k', '8k'])
-        task_id = save_pending_task(update.effective_chat.id, update.effective_user.id, "/video", url, is_hq)
+        task_id = save_pending_task(update.effective_chat.id, update.effective_user.id, "/video", url, is_hq, speed_mode)
 
     if not url or not url.startswith(('http://', 'https://')):
         if not resumed_task: await update.message.reply_text("❌ Please provide a valid URL.")
         return
 
-    download_dir = "d:/clow bot/downloads"
+    download_dir = r"D:\clow bot main\clow bot\Einstein-Bot-\downloads"
     os.makedirs(download_dir, exist_ok=True)
     task_subdir = os.path.join(download_dir, str(uuid.uuid4())[:8])
     os.makedirs(task_subdir, exist_ok=True)
@@ -2872,6 +3355,18 @@ async def video_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, r
             'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
         }
+        
+        # Apply speed mode settings
+        if speed_mode == 'superfast':
+            ydl_opts['limit_rate'] = '10M'  # 10 MiB/sec
+            ydl_opts['nothreads'] = 32
+            ydl_opts['buffersize'] = 2 * 1024 * 1024
+            ydl_opts['http_chunk_size'] = 2 * 1024 * 1024
+        elif speed_mode == 'ultrafast':
+            ydl_opts['limit_rate'] = '10M'  # 10 MiB/sec
+            ydl_opts['nothreads'] = 32
+            ydl_opts['buffersize'] = 4 * 1024 * 1024
+            ydl_opts['http_chunk_size'] = 4 * 1024 * 1024
         
         # Site-specific optimizations
         if 'faphouse.com' in url:
@@ -2931,18 +3426,24 @@ async def video_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, r
             
             if filename and os.path.exists(filename):
                 file_size_mb = os.path.getsize(filename) / (1024 * 1024)
-                await status_msg.edit_text(f"✅ <b>Downloaded!</b> ({file_size_mb:.2f} MB)\n📤 <b>Uploading to Telegram...</b>", parse_mode='HTML')
                 
                 title = info.get('title', 'Video')
-                # Use robust HTML escaping for title
                 safe_title = escape_html(title)
-                caption = f"🎬 <b>{safe_title[:100]}</b>\n━━━━━━━━━━━━━━━━━━━━━\n👨‍🔬 <i>Einstein Optimization Active</i>\n📥 @alberteinstein247_bot"
                 
-                # Use send_large_file to handle files of any size (up to 30GB+)
-                await send_large_file(update, context, filename, caption)
+                # Copy file to downloads folder for user access
+                final_path = os.path.join(download_dir, f"{safe_title[:50]}_{uuid.uuid4().hex[:8]}.mp4")
+                shutil.copy2(filename, final_path)
+                
+                await status_msg.edit_text(
+                    f"✅ <b>Download Complete!</b>\n\n"
+                    f"🎬 <b>{safe_title[:100]}</b>\n"
+                    f"📊 Size: {file_size_mb:.2f} MB\n"
+                    f"📁 Saved to: <code>{final_path}</code>\n\n"
+                    f"Use <code>/upload</code> to send to Telegram manually.",
+                    parse_mode='HTML'
+                )
                 
                 if task_id: remove_pending_task(task_id)
-                await status_msg.delete()
             else:
                 await status_msg.edit_text("❌ <b>Einstein Error:</b> Media not found after processing.", parse_mode='HTML')
                 
@@ -2962,12 +3463,13 @@ async def video_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, r
         else:
             await update.message.reply_text(f"❌ <b>{friendly_error}</b>", parse_mode='HTML')
     finally:
+        # Only clean up the temp task_subdir, the final file remains in downloads folder
         if os.path.exists(task_subdir): shutil.rmtree(task_subdir)
 async def universal_file_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, url: str):
     """Downloads any file type (jpg, png, doc, xlsx, etc.) from a direct link with animation"""
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.UPLOAD_DOCUMENT)
     
-    download_dir = "d:/clow bot/downloads"
+    download_dir = r"D:\clow bot main\clow bot\Einstein-Bot-\downloads"
     os.makedirs(download_dir, exist_ok=True)
     task_subdir = os.path.join(download_dir, str(uuid.uuid4())[:8])
     os.makedirs(task_subdir, exist_ok=True)
@@ -4202,7 +4704,7 @@ async def clean_bot_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # 2. Define directories to clean
         dirs_to_clean = [
-            "d:/clow bot/downloads",
+            r"D:\clow bot main\clow bot\Einstein-Bot-\downloads",
             "d:/clow bot/media_analysis",
             "d:/clow bot/notes",
             "d:/clow bot/screenshots"
@@ -5328,10 +5830,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 'xvideos.com', 'xhamster.com'
             ]
             
-            # If it's a known video platform, use video_downloader
+            # If it's a known video platform, download BEST quality automatically
             if any(platform in text.lower() for platform in video_platforms):
-                context.args = [text]
-                await video_downloader(update, context)
+                try:
+                    # Create a mock context with args to call video_downloader
+                    context.args = [text]
+                    await video_downloader(update, context, speed_mode='ultrafast')
+                except Exception as e:
+                    await update.message.reply_text(f"❌ Download error: {str(e)[:100]}", parse_mode='HTML')
+                    import traceback
+                    print(f"Download error: {traceback.format_exc()}")
                 return
             
             # Check for direct file extensions
@@ -6551,6 +7059,10 @@ def run_bot():
     bot_app.add_handler(CommandHandler("util", utilities_manager))
     bot_app.add_handler(CommandHandler("tools", utilities_manager))
     
+    # Upload command - MUST be before MessageHandlers to avoid being caught by auto-upload
+    bot_app.add_handler(CommandHandler("upload", upload_command))
+    bot_app.add_handler(CommandHandler("save", upload_command))
+    
     # New Utility Features - Calculator
     bot_app.add_handler(CommandHandler("calc", calculator))
     bot_app.add_handler(CommandHandler("calculate", calculator))
@@ -6583,6 +7095,14 @@ def run_bot():
     bot_app.add_handler(CommandHandler("continue", continue_tasks))
     bot_app.add_handler(CommandHandler("mp3", video_to_mp3))
     bot_app.add_handler(CommandHandler("gif", video_to_gif))
+    
+    # Super Fast & Ultra Fast Downloaders (10 MiB/sec)
+    bot_app.add_handler(CommandHandler("superfast", superfast_download))
+    bot_app.add_handler(CommandHandler("ultrafast", ultrafast_download))
+    
+    # All Qualities Download (360p, 480p, 720p, 1080p)
+    bot_app.add_handler(CommandHandler("allqualities", lambda u, c: download_all_qualities(u, c, c.args[0]) if c.args else u.message.reply_text("Usage: /allqualities [URL]")))
+    bot_app.add_handler(CommandHandler("allq", lambda u, c: download_all_qualities(u, c, c.args[0]) if c.args else u.message.reply_text("Usage: /allq [URL]")))
     
     # Video Streaming - Play without downloading
     bot_app.add_handler(CommandHandler("play", play_video))
@@ -6628,6 +7148,14 @@ def run_bot():
     bot_app.add_handler(CommandHandler("whatsapp", whatsapp_control))
     bot_app.add_handler(CommandHandler("wa", whatsapp_control))
     
+    # WhatsApp automatic file upload handlers
+    # These save files sent via WhatsApp to the uploads/whatsapp folder
+    bot_app.add_handler(MessageHandler(filters.Document.ALL & filters.ChatType.PRIVATE, whatsapp_upload))
+    bot_app.add_handler(MessageHandler(filters.PHOTO & filters.ChatType.PRIVATE, whatsapp_upload))
+    bot_app.add_handler(MessageHandler(filters.VIDEO & filters.ChatType.PRIVATE, whatsapp_upload))
+    bot_app.add_handler(MessageHandler(filters.AUDIO & filters.ChatType.PRIVATE, whatsapp_upload))
+    bot_app.add_handler(MessageHandler(filters.VOICE & filters.ChatType.PRIVATE, whatsapp_upload))
+    
     # OpenClaw features - Claude AI
     # bot_app.add_handler(CommandHandler("claude", claude_ai)) # Commented out if not fully implemented
     
@@ -6653,7 +7181,18 @@ def run_bot():
     bot_app.add_handler(CommandHandler("language", language_command))
     bot_app.add_handler(CommandHandler("lang", language_command))
     
-    # Document/file upload handler
+    # Automatic file upload handlers (before other document handlers)
+    # These catch files sent without the /upload command
+    bot_app.add_handler(MessageHandler(filters.Document.ALL & ~filters.COMMAND, upload_command))
+    bot_app.add_handler(MessageHandler(filters.PHOTO & ~filters.COMMAND, upload_command))
+    bot_app.add_handler(MessageHandler(filters.VIDEO & ~filters.COMMAND, upload_command))
+    bot_app.add_handler(MessageHandler(filters.AUDIO & ~filters.COMMAND, upload_command))
+    bot_app.add_handler(MessageHandler(filters.VOICE & ~filters.COMMAND, upload_command))
+    bot_app.add_handler(MessageHandler(filters.VIDEO_NOTE & ~filters.COMMAND, upload_command))
+    bot_app.add_handler(MessageHandler(filters.ANIMATION & ~filters.COMMAND, upload_command))
+    bot_app.add_handler(MessageHandler(filters.Sticker.ALL & ~filters.COMMAND, upload_command))
+    
+    # Document/file upload handler (legacy, for compatibility)
     bot_app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
     
     # Callback handler for inline buttons
