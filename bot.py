@@ -204,6 +204,7 @@ async def setup_commands(application):
         BotCommand("remind", "⏰ Set reminder"),
         BotCommand("calendar", "📅 Calendar"),
         BotCommand("tunnel", "☁️ Cloudflare tunnel"),
+        BotCommand("meme", "😂 Find & download memes"),
         
         # 🌍 Settings
         BotCommand("language", "🌐 Change language"),
@@ -3080,6 +3081,301 @@ async def random_facts(update: Update, context: ContextTypes.DEFAULT_TYPE):
     import random
     fact = random.choice(facts)
     await update.message.reply_text(f"🤓 **Did You Know?**\n\n{fact}", parse_mode='HTML')
+
+async def meme_finder(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Search and download memes by name - auto uploads to Telegram"""
+    if not context.args:
+        await update.message.reply_text(
+            "😂 **Meme Finder**\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            "Search and download any meme!\n\n"
+            "**Usage:**\n"
+            "`/meme [meme name]`\n\n"
+            "**Examples:**\n"
+            "• `/meme drake format`\n"
+            "• `/meme doge`\n"
+            "• `/meme pepe frog`\n"
+            "• `/meme expanding brain`\n"
+            "• `/meme stonks`\n"
+            "• `/meme sad pablo`\n\n"
+            "I'll search, download, and auto-upload the meme!",
+            parse_mode='HTML'
+        )
+        return
+    
+    # Get the meme search query
+    query = ' '.join(context.args)
+    
+    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action=ChatAction.UPLOAD_PHOTO)
+    
+    status_msg = await update.message.reply_text(
+        f"🔍 **Searching for:** `{escape_html(query)}`\n"
+        f"🌐 Querying meme databases...",
+        parse_mode='HTML'
+    )
+    
+    try:
+        # Popular meme templates database with direct image URLs
+        meme_database = {
+            'drake': 'https://i.imgflip.com/30b1gx.jpg',
+            'drake format': 'https://i.imgflip.com/30b1gx.jpg',
+            'doge': 'https://i.imgflip.com/4t0m5.jpg',
+            'dog': 'https://i.imgflip.com/4t0m5.jpg',
+            'pepe': 'https://i.imgflip.com/26am7y.jpg',
+            'pepe frog': 'https://i.imgflip.com/26am7y.jpg',
+            'sad frog': 'https://i.imgflip.com/26am7y.jpg',
+            'stonks': 'https://i.imgflip.com/46hh43.jpg',
+            'not stonks': 'https://i.imgflip.com/46hh43.jpg',
+            'expanding brain': 'https://i.imgflip.com/1jwhww.jpg',
+            'brain': 'https://i.imgflip.com/1jwhww.jpg',
+            'galaxy brain': 'https://i.imgflip.com/1jwhww.jpg',
+            'distracted boyfriend': 'https://i.imgflip.com/1ur9b0.jpg',
+            'boyfriend': 'https://i.imgflip.com/1ur9b0.jpg',
+            'two buttons': 'https://i.imgflip.com/1yxkcp.jpg',
+            'buttons': 'https://i.imgflip.com/1yxkcp.jpg',
+            'change my mind': 'https://i.imgflip.com/24y43o.jpg',
+            'crowder': 'https://i.imgflip.com/24y43o.jpg',
+            'woman yelling cat': 'https://i.imgflip.com/345v97.jpg',
+            'angry woman cat': 'https://i.imgflip.com/345v97.jpg',
+            'cat': 'https://i.imgflip.com/345v97.jpg',
+            'sad pablo': 'https://i.imgflip.com/1c1uej.jpg',
+            'pablo escobar': 'https://i.imgflip.com/1c1uej.jpg',
+            'waiting': 'https://i.imgflip.com/2gn9hj.jpg',
+            'i will wait': 'https://i.imgflip.com/2gn9hj.jpg',
+            'batman slapping': 'https://i.imgflip.com/9ehk7.jpg',
+            'batman': 'https://i.imgflip.com/9ehk7.jpg',
+            'roll safe': 'https://i.imgflip.com/1h7in3.jpg',
+            'think about it': 'https://i.imgflip.com/1h7in3.jpg',
+            'is this pigeon': 'https://i.imgflip.com/1o00in.jpg',
+            'pigeon': 'https://i.imgflip.com/1o00in.jpg',
+            'butterfly': 'https://i.imgflip.com/1o00in.jpg',
+            'surprised pikachu': 'https://i.imgflip.com/2kbx1a.jpg',
+            'pikachu': 'https://i.imgflip.com/2kbx1a.jpg',
+            'mocking spongebob': 'https://i.imgflip.com/1otk96.jpg',
+            'spongebob': 'https://i.imgflip.com/1otk96.jpg',
+            'patrick': 'https://i.imgflip.com/7bk5k1.jpg',
+            'evil kermit': 'https://i.imgflip.com/1e7ql7.jpg',
+            'kermit': 'https://i.imgflip.com/1e7ql7.jpg',
+            'success kid': 'https://i.imgflip.com/1bhk.jpg',
+            'kid': 'https://i.imgflip.com/1bhk.jpg',
+            'bad luck brian': 'https://i.imgflip.com/1bip.jpg',
+            'brian': 'https://i.imgflip.com/1bip.jpg',
+            'grumpy cat': 'https://i.imgflip.com/8p0a.jpg',
+            'troll face': 'https://i.imgflip.com/1b7v5.jpg',
+            'troll': 'https://i.imgflip.com/1b7v5.jpg',
+            'forever alone': 'https://i.imgflip.com/8ysw.jpg',
+            'y u no': 'https://i.imgflip.com/1bh8.jpg',
+            'okay guy': 'https://i.imgflip.com/8i43.jpg',
+            'rage guy': 'https://i.imgflip.com/c807.jpg',
+            'futurama fry': 'https://i.imgflip.com/1bgw.jpg',
+            'fry': 'https://i.imgflip.com/1bgw.jpg',
+            'not sure if': 'https://i.imgflip.com/1bgw.jpg',
+            'one does not simply': 'https://i.imgflip.com/1bij.jpg',
+            'boromir': 'https://i.imgflip.com/1bij.jpg',
+            'lord of the rings': 'https://i.imgflip.com/1bij.jpg',
+            'yoda': 'https://i.imgflip.com/8ky6.jpg',
+            'brace yourselves': 'https://i.imgflip.com/1bhm.jpg',
+            'ned stark': 'https://i.imgflip.com/1bhm.jpg',
+            'disaster girl': 'https://i.imgflip.com/23ls.jpg',
+            'girl': 'https://i.imgflip.com/23ls.jpg',
+            'hide the pain harold': 'https://i.imgflip.com/1b8hs.jpg',
+            'harold': 'https://i.imgflip.com/1b8hs.jpg',
+            'crying': 'https://i.imgflip.com/1b8hs.jpg',
+            'left exit 12': 'https://i.imgflip.com/22eeq.jpg',
+            'car': 'https://i.imgflip.com/22eeq.jpg',
+            'highway': 'https://i.imgflip.com/22eeq.jpg',
+            'running away balloon': 'https://i.imgflip.com/1b9v4.jpg',
+            'balloon': 'https://i.imgflip.com/1b9v4.jpg',
+            'math lady': 'https://i.imgflip.com/1bhl7.jpg',
+            'confused': 'https://i.imgflip.com/1bhl7.jpg',
+            'blinking guy': 'https://i.imgflip.com/1h8h37.jpg',
+            'drew scanlon': 'https://i.imgflip.com/1h8h37.jpg',
+            'monkey puppet': 'https://i.imgflip.com/2cp6br.jpg',
+            'monkey': 'https://i.imgflip.com/2cp6br.jpg',
+            'puppet': 'https://i.imgflip.com/2cp6br.jpg',
+            'i see no god': 'https://i.imgflip.com/26ftxi.jpg',
+            'up here': 'https://i.imgflip.com/26ftxi.jpg',
+            'always has been': 'https://i.imgflip.com/46e43q.jpg',
+            'astronaut': 'https://i.imgflip.com/46e43q.jpg',
+            'gun': 'https://i.imgflip.com/46e43q.jpg',
+            'bernie': 'https://i.imgflip.com/51s5.jpg',
+            'bernie sanders': 'https://i.imgflip.com/51s5.jpg',
+            'trade offer': 'https://i.imgflip.com/54hjww.jpg',
+            'i receive': 'https://i.imgflip.com/54hjww.jpg',
+            'you receive': 'https://i.imgflip.com/54hjww.jpg',
+            'sweating': 'https://i.imgflip.com/2qmpfx.jpg',
+            'nervous': 'https://i.imgflip.com/2qmpfx.jpg',
+            'two guys fighting': 'https://i.imgflip.com/3l9euk.jpg',
+            'american chopper': 'https://i.imgflip.com/3l9euk.jpg',
+            'fight': 'https://i.imgflip.com/3l9euk.jpg',
+            'chad': 'https://i.imgflip.com/5c7lwe.jpg',
+            'gigachad': 'https://i.imgflip.com/5c7lwe.jpg',
+            'yes': 'https://i.imgflip.com/5c7lwe.jpg',
+            'no': 'https://i.imgflip.com/5c7lwe.jpg',
+            'fan vs enjoyer': 'https://i.imgflip.com/5c7lwe.jpg',
+            'average fan': 'https://i.imgflip.com/5c7lwe.jpg',
+            'average enjoyer': 'https://i.imgflip.com/5c7lwe.jpg',
+            'bus': 'https://i.imgflip.com/5gcq8.jpg',
+            'speed': 'https://i.imgflip.com/5gcq8.jpg',
+        }
+        
+        # Try exact match first
+        meme_url = None
+        query_lower = query.lower()
+        
+        if query_lower in meme_database:
+            meme_url = meme_database[query_lower]
+        else:
+            # Try partial match
+            for key, url in meme_database.items():
+                if query_lower in key or key in query_lower:
+                    meme_url = url
+                    break
+        
+        # If found in database, download and upload
+        if meme_url:
+            await status_msg.edit_text(
+                f"✅ **Meme found!**\n"
+                f"📥 Downloading...",
+                parse_mode='HTML'
+            )
+            
+            # Download the meme
+            download_dir = os.path.join(BOT_ROOT, "downloads")
+            os.makedirs(download_dir, exist_ok=True)
+            file_path = os.path.join(download_dir, f"meme_{uuid.uuid4().hex[:8]}.jpg")
+            
+            response = requests.get(meme_url, timeout=30, headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.0'
+            })
+            response.raise_for_status()
+            
+            with open(file_path, 'wb') as f:
+                f.write(response.content)
+            
+            # Upload to Telegram
+            if os.path.exists(file_path):
+                await status_msg.edit_text(
+                    f"📤 **Uploading meme to Telegram...**",
+                    parse_mode='HTML'
+                )
+                
+                caption = (
+                    f"😂 **{escape_html(query.title())} Meme**\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"🔍 Searched: `{escape_html(query)}`\n"
+                    f"👨‍🔬 Powered by Einstein Bot"
+                )
+                
+                await update.message.reply_photo(
+                    photo=open(file_path, 'rb'),
+                    caption=caption,
+                    parse_mode='HTML'
+                )
+                
+                # Clean up
+                await status_msg.delete()
+                os.remove(file_path)
+                return
+        
+        # If not found in database, try Reddit
+        await status_msg.edit_text(
+            f"🔍 **Searching Reddit for:** `{escape_html(query)}`\n"
+            f"⏳ Fetching from r/memes, r/dankmemes...",
+            parse_mode='HTML'
+        )
+        
+        # Try to get a random meme from Reddit as fallback
+        reddit_url = "https://www.reddit.com/r/memes/top.json?limit=25&t=week"
+        
+        try:
+            reddit_response = requests.get(
+                reddit_url,
+                headers={'User-Agent': 'EinsteinBot/1.0'},
+                timeout=15
+            )
+            
+            if reddit_response.status_code == 200:
+                data = reddit_response.json()
+                posts = data.get('data', {}).get('children', [])
+                
+                # Filter posts with images
+                image_posts = [
+                    p for p in posts 
+                    if p.get('data', {}).get('url', '').endswith(('.jpg', '.jpeg', '.png', '.gif'))
+                    and query_lower in p.get('data', {}).get('title', '').lower()
+                ]
+                
+                if not image_posts:
+                    # If no match, get any random meme
+                    image_posts = [
+                        p for p in posts 
+                        if p.get('data', {}).get('url', '').endswith(('.jpg', '.jpeg', '.png', '.gif'))
+                    ]
+                
+                if image_posts:
+                    post = random.choice(image_posts)
+                    meme_url = post['data']['url']
+                    post_title = post['data'].get('title', 'Unknown')
+                    
+                    # Download
+                    await status_msg.edit_text(
+                        f"✅ **Meme found on Reddit!**\n"
+                        f"📥 Downloading...",
+                        parse_mode='HTML'
+                    )
+                    
+                    download_dir = os.path.join(BOT_ROOT, "downloads")
+                    os.makedirs(download_dir, exist_ok=True)
+                    file_path = os.path.join(download_dir, f"meme_{uuid.uuid4().hex[:8]}.jpg")
+                    
+                    img_response = requests.get(meme_url, timeout=30)
+                    with open(file_path, 'wb') as f:
+                        f.write(img_response.content)
+                    
+                    # Upload
+                    caption = (
+                        f"😂 **{escape_html(post_title[:50])}**\n"
+                        f"━━━━━━━━━━━━━━━━━━━━━\n"
+                        f"🔍 Searched: `{escape_html(query)}`\n"
+                        f"📱 Source: Reddit\n"
+                        f"👨‍🔬 Powered by Einstein Bot"
+                    )
+                    
+                    await update.message.reply_photo(
+                        photo=open(file_path, 'rb'),
+                        caption=caption,
+                        parse_mode='HTML'
+                    )
+                    
+                    await status_msg.delete()
+                    os.remove(file_path)
+                    return
+        
+        except Exception as reddit_err:
+            print(f"Reddit fetch error: {reddit_err}")
+        
+        # If all fails
+        await status_msg.edit_text(
+            f"❌ **Meme not found**\n\n"
+            f"Could not find `{escape_html(query)}` meme.\n\n"
+            f"**Try these popular memes:**\n"
+            f"• `/meme drake`\n"
+            f"• `/meme doge`\n"
+            f"• `/meme stonks`\n"
+            f"• `/meme pepe`\n"
+            f"• `/meme brain`\n"
+            f"• `/meme cat`",
+            parse_mode='HTML'
+        )
+        
+    except Exception as e:
+        print(f"Meme finder error: {e}")
+        await status_msg.edit_text(
+            f"❌ **Error:** `{escape_html(str(e)[:100])}`\n\n"
+            f"Try again with a different meme name!",
+            parse_mode='HTML'
+        )
 
 async def upload_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
@@ -10226,6 +10522,7 @@ def run_bot():
     bot_app.add_handler(CommandHandler("joke", random_joke))
     bot_app.add_handler(CommandHandler("quote", random_quote))
     bot_app.add_handler(CommandHandler("fact", random_facts))
+    bot_app.add_handler(CommandHandler("meme", meme_finder))
     bot_app.add_handler(CommandHandler("wiki", wikipedia_search))
     bot_app.add_handler(CommandHandler("translate", translate_reply))
     bot_app.add_handler(CommandHandler("timer", set_timer))
