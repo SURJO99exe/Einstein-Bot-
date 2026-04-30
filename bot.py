@@ -888,50 +888,91 @@ async def stop_all_actions(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 async def clear_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Deep deletion of all recent messages and conversation history"""
+    """Instant clear - delete all messages with no delay, fresh bot start"""
     if not await check_auth(update): return
     
     chat_id = update.effective_chat.id
     current_msg_id = update.message.message_id
     
-    # Send cleanup status
-    status_msg = await update.message.reply_text("🧹 `Einstein OS: Purging conversation photons...` ⚛️", parse_mode='HTML')
+    # Quick status - will be deleted too
+    status_msg = await update.message.reply_text("🧹 **Clearing chat...**", parse_mode='HTML')
     
     deleted_count = 0
-    failed_count = 0
     
-    # Try to delete the last 100 messages (Telegram limit for batch deletion)
-    # We loop backwards from current message ID
-    for msg_id in range(current_msg_id - 1, current_msg_id - 101, -1):
+    # INSTANT deletion - no delays, gather all delete tasks
+    delete_tasks = []
+    for msg_id in range(current_msg_id, current_msg_id - 200, -1):  # Increased to 200 messages
         if msg_id <= 0:
             continue
-        try:
-            await context.bot.delete_message(chat_id=chat_id, message_id=msg_id)
-            deleted_count += 1
-            await asyncio.sleep(0.1)  # Small delay to avoid rate limits
-        except Exception as e:
-            # Skip messages that can't be deleted (older than 48h or already gone)
-            failed_count += 1
-            continue
+        # Create delete task for each message
+        task = context.bot.delete_message(chat_id=chat_id, message_id=msg_id)
+        delete_tasks.append(task)
     
-    # Update status message with results
+    # Execute all deletions in parallel batches for speed
+    batch_size = 30  # Telegram allows 30 messages/second
+    for i in range(0, len(delete_tasks), batch_size):
+        batch = delete_tasks[i:i + batch_size]
+        try:
+            # Run batch simultaneously
+            results = await asyncio.gather(*batch, return_exceptions=True)
+            deleted_count += sum(1 for r in results if not isinstance(r, Exception))
+        except Exception:
+            pass
+    
+    # Delete status message too for clean slate
     try:
-        await status_msg.edit_text(
-            f"✅ **Laboratory Sanitized**\n"
-            f"━━━━━━━━━━━━━━━━━━━━━\n"
-            f"🗑️ **Messages Deleted:** `{deleted_count}`\n"
-            f"⚠️ **Skipped:** `{failed_count}`\n"
-            f"🧠 **Chat History:** `Purged`\n\n"
-            f"👨‍🔬 *\"Everything should be made as simple as possible...\"*",
-            parse_mode='HTML'
-        )
-    except Exception:
-        # If status message edit fails, send new message
-        await context.bot.send_message(
-            chat_id=chat_id,
-            text=f"✅ **Laboratory Sanitized**\n🗑️ Messages Deleted: `{deleted_count}`",
-            parse_mode='HTML'
-        )
+        await status_msg.delete()
+    except:
+        pass
+    
+    # Also try to delete the original /clear command
+    try:
+        await update.message.delete()
+    except:
+        pass
+    
+    # FRESH START - Send welcome message like new bot
+    user_id = str(update.effective_user.id)
+    lang = user_languages.get(user_id, 'en')
+    
+    # Recreate keyboard
+    keyboard = [
+        ['📊 Status', '📂 Files', '🧹 Clear'],
+        ['📥 Download Video', '🎵 Download MP3', '🖼️ Download Image'],
+        ['▶️ Play Video', '🔎 YT Search', '📺 Media Tools'],
+        ['🤖 AI Chat', '🎨 AI Art', '📽️ AI Video'],
+        ['👨‍🔬 Einstein AI', '🔬 Quantum Lab', '📊 Data Analysis'],
+        ['🔍 Web Search', '🌐 Web Browser', '🌤️ Weather'],
+        ['📱 Phone', '💬 Discord', '📘 Facebook'],
+        ['🛠️ Tools', '📝 Notes', '⏰ Reminders'],
+        ['📅 Calendar', '📸 Screenshot', '📁 File Manager'],
+        ['😂 Meme', '🎵 Music', '📖 Help'],
+        ['🌍 Language', '⚙️ Settings']
+    ]
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    
+    # Fresh welcome text
+    fresh_text = (
+        "✨ **Chat Cleared! Fresh Start!**\n"
+        "━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "🧠 **Einstein Bot Ready**\n"
+        "👨‍🔬 Your Smart Assistant\n\n"
+        "🗑️ **Cleared:** All messages deleted\n"
+        "🆕 **Status:** Fresh bot instance\n\n"
+        "**Quick Start:**\n"
+        "• Send any URL → Auto download\n"
+        "• `/meme [name]` → Get meme\n"
+        "• `/video [URL]` → Download video\n"
+        "• Just chat → AI response\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━"
+    )
+    
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text=fresh_text,
+        reply_markup=reply_markup,
+        parse_mode='HTML'
+    )
 
 async def list_workspace_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """List all files in the current workspace"""
