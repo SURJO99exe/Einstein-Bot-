@@ -150,54 +150,72 @@ def sanitize_filename(filename: str) -> str:
     return filename if filename else "unnamed"
 
 async def setup_commands(application):
-    """Set up the bot command menu in Telegram"""
+    """Set up the bot command menu in Telegram with organized categories"""
     commands = [
-        # System
+        # 🚀 System
         BotCommand("start", "🚀 Wake up Einstein"),
-        BotCommand("help", "📖 Show manual"),
-        BotCommand("stop", "🛑 Emergency stop"),
         BotCommand("status", "📊 System diagnostics"),
+        BotCommand("help", "📖 Show all commands"),
         BotCommand("clear", "🧹 Clear chat"),
+        BotCommand("stop", "🛑 Stop bot"),
         
-        # Media & Conversion
-        BotCommand("mp3", "🎵 Extract audio (Reply to video)"),
-        BotCommand("gif", "🎞️ Convert to GIF (Reply to video)"),
-        BotCommand("emoji", "🖼️ Pixel art (Reply to image)"),
-        BotCommand("playlist", "📂 Download YT Playlist"),
-        BotCommand("video", "🎬 Universal downloader"),
-        BotCommand("music", "🎵 Download music"),
+        # 📥 Media & Download
+        BotCommand("video", "🎬 Download any video"),
+        BotCommand("music", "🎵 Search & download music"),
+        BotCommand("play", "▶️ Stream video instantly"),
         BotCommand("yt", "🔎 YouTube search"),
+        BotCommand("playlist", "📂 Download playlist"),
+        BotCommand("mp3", "🎵 Extract audio from video"),
+        BotCommand("gif", "🎞️ Video to GIF"),
+        BotCommand("emoji", "🖼️ Image to pixel art"),
+        BotCommand("enhance", "✨ Enhance video quality"),
         
-        # Tools
-        BotCommand("screenshot", "📸 Take host screenshot"),
-        BotCommand("ss", "📸 Short for screenshot"),
-        BotCommand("files", "📁 List workspace"),
-        BotCommand("browser", "🌐 Browser control"),
-        BotCommand("tunnel", "☁️ Cloudflare tunnel"),
-        
-        # AI & Search
-        BotCommand("search", "🔍 Web search"),
-        BotCommand("weather", "🌤️ Weather monitor"),
-        BotCommand("ai", "🤖 Chat with OpenAI"),
-        BotCommand("ollama", "🦙 Free local AI"),
+        # 🤖 AI Features
+        BotCommand("ai", "🤖 Chat with AI"),
         BotCommand("gen", "🎨 Generate AI Art"),
         BotCommand("vgen", "📽️ Generate AI Video"),
+        BotCommand("ollama", "🦙 Local AI chat"),
+        BotCommand("ask", "❓ Ask Einstein anything"),
+        
+        # 🔬 Science & Analysis
         BotCommand("simulation_heisenberg", "📏 Heisenberg simulation"),
-        BotCommand("simulation_quantum_tunneling", "🌀 Quantum tunneling simulation"),
+        BotCommand("simulation_quantum_tunneling", "🌀 Quantum tunneling"),
+        BotCommand("simulation_double_slit", "💡 Double slit experiment"),
+        BotCommand("simulation_schrodinger", "🐈 Schrödinger's cat"),
+        BotCommand("analyze", "📊 Data analysis"),
+        BotCommand("dataviz", "📈 Data visualization"),
         
-        # Social & Communication
-        BotCommand("facebook", "📘 Facebook control"),
-        BotCommand("phone", "📱 Phone controller"),
-        BotCommand("discord", "💬 Discord message"),
+        # 🔍 Search & Web
+        BotCommand("search", "🔍 Web search"),
+        BotCommand("weather", "🌤️ Weather info"),
+        BotCommand("browser", "🌐 Web browser"),
+        
+        # 📱 Social & Control
+        BotCommand("phone", "📱 Phone control"),
+        BotCommand("discord", "💬 Discord webhook"),
         BotCommand("whatsapp", "💬 WhatsApp control"),
+        BotCommand("facebook", "📘 Facebook tools"),
         
-        # Utils & Language
-        BotCommand("utils", "🛠️ Tool dashboard"),
-        BotCommand("language", "🌍 Change language"),
+        # 🛠️ Tools & Utilities
+        BotCommand("screenshot", "📸 Screenshot"),
+        BotCommand("files", "📁 File manager"),
+        BotCommand("utils", "🧰 Tools dashboard"),
+        BotCommand("notes", "📝 Notes manager"),
+        BotCommand("remind", "⏰ Set reminder"),
+        BotCommand("calendar", "📅 Calendar"),
+        BotCommand("tunnel", "☁️ Cloudflare tunnel"),
+        
+        # 🌍 Settings
+        BotCommand("language", "🌐 Change language"),
+        BotCommand("github", "🐙 GitHub tools"),
+        BotCommand("gmail", "📧 Gmail tools"),
     ]
     
-    await application.bot.set_my_commands(commands)
-    print("📋 Command menu set up successfully!")
+    try:
+        await application.bot.set_my_commands(commands)
+        print("📋 Command menu set up successfully! (30 commands)")
+    except Exception as e:
+        print(f"⚠️ Command menu setup failed: {e}")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_auth(update): return
@@ -209,18 +227,31 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Set up command menu when user starts the bot
     await setup_commands(context.application)
     
+    # Modern organized command box with categories
     keyboard = [
-        ['📊 Status', '📂 Files', '💻 CMD'],
-        ['🌤️ Weather', '🔍 Search', '👨‍🔬 Einstein'],
-        ['🌐 Browser', '📸 Capture', '🛠️ Utils'],
-        ['📱 Phone', '📍 Share Loc', '📺 Media'],
-        ['🔎 YT Search', '💬 Chat', '🐙 GitHub'],
-        ['📧 Gmail', '📝 Notes', '⏰ Remind'],
-        ['📅 Calendar', '✈️ Travel', '📁 Manager'],
-        ['🏠 SmartHome', '💬 Discord', '🤖 AI Smart'],
-        ['📖 Help']
+        # 🎯 Quick Actions
+        ['📊 Status', '📂 Files', '🧹 Clear'],
+        
+        # 📥 Media & Download
+        ['📥 Download Video', '🎵 Download MP3', '🖼️ Download Image'],
+        ['▶️ Play Video', '🔎 YT Search', '📺 Media Tools'],
+        
+        # 🤖 AI & Smart Tools
+        ['🤖 AI Chat', '🎨 AI Art', '📽️ AI Video'],
+        ['👨‍🔬 Einstein AI', '🔬 Quantum Lab', '📊 Data Analysis'],
+        
+        # 🔍 Search & Web
+        ['🔍 Web Search', '🌐 Web Browser', '🌤️ Weather'],
+        ['📱 Phone', '💬 Discord', '📘 Facebook'],
+        
+        # 🛠️ Tools & Utils
+        ['🛠️ Tools', '📝 Notes', '⏰ Reminders'],
+        ['📅 Calendar', '📸 Screenshot', '📁 File Manager'],
+        
+        # 📖 Help & Settings
+        ['📖 Help', '🌍 Language', '⚙️ Settings']
     ]
-    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, row_width=3)
     
     welcome_text = get_text('welcome', lang, web_port=f"http://127.0.0.1:{WEB_PORT}")
     
@@ -6183,6 +6214,7 @@ class ProgressTracker:
         self.start_time = time.time()
         self.animations = ["⏳", "⌛", "⏱️", "🕐", "🕑", "🕒", "🕓", "🕔", "🕕", "🕖", "🕗", "🕘"]
         self.animation_index = 0
+        self.loop = asyncio.get_event_loop()  # Store the main event loop reference
         
     def format_bytes(self, bytes_val):
         """Format bytes to human readable string"""
@@ -6211,8 +6243,15 @@ class ProgressTracker:
         bar = '█' * filled + '░' * (length - filled)
         return f"[{bar}] {percentage:.1f}%"
     
-    async def update_progress(self, d):
-        """Update progress message in Telegram"""
+    async def _do_update(self, text):
+        """Internal method to actually update the message"""
+        try:
+            await self.status_message.edit_text(text, parse_mode='HTML')
+        except Exception:
+            pass  # Ignore edit errors (rate limits, etc.)
+
+    def update_progress(self, d):
+        """Update progress message in Telegram - called from thread pool"""
         current_time = time.time()
         # Update every 2 seconds to avoid rate limits
         if current_time - self.last_update_time < 2:
@@ -6220,6 +6259,7 @@ class ProgressTracker:
         self.last_update_time = current_time
         
         status = d.get('status', '')
+        text = None
         
         if status == 'downloading':
             downloaded = d.get('downloaded_bytes', 0)
@@ -6248,11 +6288,6 @@ class ProgressTracker:
                     f"🕐 <b>Time Remaining:</b> <code>{eta_str}</code>\n\n"
                     f"<i>Please wait while Einstein downloads your content...</i>"
                 )
-                
-                try:
-                    await self.status_message.edit_text(text, parse_mode='HTML')
-                except Exception as e:
-                    pass  # Ignore edit errors (rate limits, etc.)
                     
         elif status == 'finished':
             elapsed = current_time - self.start_time
@@ -6266,11 +6301,10 @@ class ProgressTracker:
                 f"⏱️ <b>Total Time:</b> <code>{self.format_time(elapsed)}</code>\n\n"
                 f"📤 <b>Preparing to upload...</b>"
             )
-            
-            try:
-                await self.status_message.edit_text(text, parse_mode='HTML')
-            except:
-                pass
+        
+        # Schedule the coroutine in the main event loop from this thread
+        if text:
+            asyncio.run_coroutine_threadsafe(self._do_update(text), self.loop)
 
 
 async def video_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, resumed_task=None, speed_mode=None):
@@ -6394,8 +6428,8 @@ async def video_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, r
         # Initialize progress tracker
         progress_tracker = ProgressTracker(status_msg, update, context)
         
-        # Add progress hooks to ydl_opts
-        ydl_opts['progress_hooks'] = [lambda d: asyncio.create_task(progress_tracker.update_progress(d))]
+        # Add progress hooks to ydl_opts - use the sync method that schedules to main loop
+        ydl_opts['progress_hooks'] = [progress_tracker.update_progress]
         
         await status_msg.edit_text("📥 <b>Starting download...</b>\n\n<code>Initializing connection...</code>", parse_mode='HTML')
 
@@ -8734,12 +8768,104 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "last_seen": time.time()
         }
     
+    # 🎯 Quick Actions
     if text == '📊 Status':
         await system_status(update, context)
-    elif text == '📂 Files' or text == '📂 Manager':
+    elif text == '📂 Files':
         await list_files(update, context)
-    elif text == '💻 CMD':
-        await update.message.reply_text("💻 CMD Mode Active!\nSend any command to run in terminal.")
+    elif text == '🧹 Clear':
+        await clear_chat(update, context)
+    
+    # 📥 Media & Download Buttons
+    elif text == '📥 Download Video':
+        await update.message.reply_text(
+            "📥 **Download Video**\n━━━━━━━━━━━━━━━━━━━━━\n"
+            "Send me any video URL and I'll download it!\n\n"
+            "**Supported platforms:**\n"
+            "• YouTube, TikTok, Instagram\n"
+            "• Facebook, Twitter/X\n"
+            "• Terabox, FapHouse\n"
+            "• Any direct video link\n\n"
+            "Just paste the URL!"
+        )
+    elif text == '🎵 Download MP3':
+        await update.message.reply_text(
+            "🎵 **Download MP3**\n━━━━━━━━━━━━━━━━━━━━━\n"
+            "Reply to a video with `/mp3` to extract audio!\n\n"
+            "Or use `/music [search query]` to search and download songs.\n\n"
+            "Example: `/music never gonna give you up`"
+        )
+    elif text == '🖼️ Download Image':
+        await update.message.reply_text(
+            "🖼️ **Download Image**\n━━━━━━━━━━━━━━━━━━━━━\n"
+            "Send me any image URL and I'll download it!\n\n"
+            "You can also send direct image links and I'll auto-download."
+        )
+    elif text == '▶️ Play Video':
+        await update.message.reply_text(
+            "▶️ **Play Video**\n━━━━━━━━━━━━━━━━━━━━━\n"
+            "Stream videos directly without downloading!\n\n"
+            "Usage: `/play [URL]`\n\n"
+            "Supported: YouTube, TikTok, Instagram, Facebook, etc."
+        )
+    elif text == '📺 Media Tools':
+        await update.message.reply_text(
+            "📺 **Media Tools**\n━━━━━━━━━━━━━━━━━━━━━\n"
+            "• `/video [URL]` - Download any video\n"
+            "• `/play [URL]` - Stream video\n"
+            "• `/mp3` - Reply to video to extract audio\n"
+            "• `/gif` - Reply to video to make GIF\n"
+            "• `/emoji` - Reply to image for pixel art\n"
+            "• `/enhance` - Reply to video to enhance quality\n"
+            "• `/yt [search]` - Search YouTube\n"
+            "• `/playlist [URL]` - Download playlist"
+        )
+    
+    # 🤖 AI & Smart Tools
+    elif text == '🤖 AI Chat':
+        await ai_chat(update, None)
+    elif text == '🎨 AI Art':
+        await update.message.reply_text(
+            "🎨 **AI Art Generator**\n━━━━━━━━━━━━━━━━━━━━━\n"
+            "Create stunning AI images!\n\n"
+            "Usage: `/gen [description]`\n\n"
+            "Example: `/gen a cyberpunk city at sunset`"
+        )
+    elif text == '📽️ AI Video':
+        await update.message.reply_text(
+            "📽️ **AI Video Generator**\n━━━━━━━━━━━━━━━━━━━━━\n"
+            "Create AI videos from text!\n\n"
+            "Usage: `/vgen [description]`\n\n"
+            "Example: `/vgen a robot dancing in the rain`"
+        )
+    elif text == '🔬 Quantum Lab':
+        await update.message.reply_text(
+            "🔬 **Quantum Physics Lab**\n━━━━━━━━━━━━━━━━━━━━━\n"
+            "Explore quantum phenomena!\n\n"
+            "• `/simulation_double_slit` - Double slit experiment\n"
+            "• `/simulation_heisenberg` - Uncertainty principle\n"
+            "• `/simulation_quantum_tunneling` - Quantum tunneling\n"
+            "• `/simulation_schrodinger` - Schrödinger's cat"
+        )
+    elif text == '📊 Data Analysis':
+        await update.message.reply_text(
+            "📊 **Data Analysis Lab**\n━━━━━━━━━━━━━━━━━━━━━\n"
+            "Advanced data analysis tools!\n\n"
+            "• `/analyze` - Statistical analysis\n"
+            "• `/dataviz` - Data visualization\n"
+            "• `/predict` - Predictive modeling"
+        )
+    
+    # 🔍 Search & Web
+    elif text == '🔍 Web Search':
+        await update.message.reply_text(
+            "🔍 **Web Search**\n━━━━━━━━━━━━━━━━━━━━━\n"
+            "Search the web instantly!\n\n"
+            "Usage: `/search [query]`\n\n"
+            "Example: `/search latest technology news`"
+        )
+    elif text == '📘 Facebook':
+        await facebook_control(update, context)
     elif text == '🌤️ Weather':
         await get_weather(update, None)
     elif text == '🔍 Search':
@@ -8793,16 +8919,29 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await github_control(update, context)
     elif text == '📧 Gmail':
         await gmail_control(update, context)
+    # 🛠️ Tools & Utils
+    elif text == '🛠️ Tools':
+        await utilities_manager(update, context)
     elif text == '📝 Notes':
         await notes_manager(update, context)
-    elif text == '⏰ Remind':
+    elif text == '⏰ Reminders' or text == '⏰ Remind':
         await reminders_manager(update, context)
     elif text == '📅 Calendar':
         await calendar_manager(update, context)
-    elif text == '✈️ Travel':
-        await flight_checkin(update, context)
-    elif text == '📁 Manager' or text == '📂 Files':
+    elif text == '📸 Screenshot' or text == '📸 Capture':
+        await take_screenshot(update, context)
+    elif text == '📁 File Manager' or text == '📂 Files':
         await list_files(update, context)
+    elif text == '⚙️ Settings':
+        await update.message.reply_text(
+            "⚙️ **Settings**\n━━━━━━━━━━━━━━━━━━━━━\n"
+            "• Use `/language` to change bot language\n"
+            "• Use `/stop` to stop the bot\n"
+            "• Use `/status` to check system status\n"
+            "• Use `/clear` to clear chat history"
+        )
+    elif text == '🌍 Language':
+        await language_handler(update, context)
     elif text == '🏠 SmartHome':
         await smarthome_control(update, context)
     elif text == '💬 Discord':
