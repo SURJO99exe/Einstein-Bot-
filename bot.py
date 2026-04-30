@@ -32,6 +32,8 @@ from languages import detect_language, get_text, get_language_name, LANGUAGES
 load_dotenv()
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 ALLOWED_USER_ID = os.getenv("ALLOWED_USER_ID")
+ADMIN_LIST = [int(ALLOWED_USER_ID)] if ALLOWED_USER_ID else [] # List of admin user IDs
+# You can add more admins here: ADMIN_LIST.append(12345678)
 POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_API_KEY")
 HUGGINGFACE_TOKEN = os.getenv("HUGGINGFACE_TOKEN")
 JSON2VIDEO_KEY = os.getenv("JSON2VIDEO_KEY")
@@ -108,6 +110,25 @@ def background_cleanup():
 async def check_auth(update: Update):
     """Allows all users to use the bot (Restricted ID check disabled)"""
     return True
+
+async def is_admin(update: Update):
+    """Check if the user is in the ADMIN_LIST"""
+    user_id = update.effective_user.id
+    if user_id in ADMIN_LIST:
+        return True
+    return False
+
+async def admin_only(update: Update):
+    """Notify user they don't have admin permissions"""
+    await update.message.reply_text(
+        "🚫 **Access Denied**\n"
+        "━━━━━━━━━━━━━━━━━━━━━\n"
+        "This command is restricted to **Sudo Admin** only.\n"
+        "Normal users cannot use this feature.\n\n"
+        "👨‍🔬 *\"Authority without wisdom is a dangerous thing.\"*",
+        parse_mode='HTML'
+    )
+    return False
 
 def escape_html(text: str) -> str:
     """Escapes HTML special characters for Telegram."""
@@ -265,6 +286,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def system_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_auth(update): return
+    if not await is_admin(update): return await admin_only(update)
     
     user_id = str(update.effective_user.id)
     lang = user_languages.get(user_id, 'en')
@@ -283,6 +305,7 @@ async def system_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def list_files(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_auth(update): return
+    if not await is_admin(update): return await admin_only(update)
     
     try:
         files = os.listdir('.')
@@ -733,6 +756,7 @@ async def language_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def tunnel_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Start or stop the Cloudflare tunnel via Telegram command with custom link support"""
     if not await check_auth(update): return
+    if not await is_admin(update): return await admin_only(update)
     
     global cf_tunnel_process, cf_tunnel_url
     
@@ -835,6 +859,7 @@ async def tunnel_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def stop_all_actions(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Stop all active bot operations (Tunnel, Location sharing, Phone commands)"""
     if not await check_auth(update): return
+    if not await is_admin(update): return await admin_only(update)
     
     global cf_tunnel_process, cf_tunnel_url, share_location_active
     
@@ -890,6 +915,7 @@ async def stop_all_actions(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def clear_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Instant clear - delete all messages with no delay, fresh bot start"""
     if not await check_auth(update): return
+    if not await is_admin(update): return await admin_only(update)
     
     chat_id = update.effective_chat.id
     current_msg_id = update.message.message_id
@@ -1445,6 +1471,7 @@ async def ai_chat(update: Update, message: str = None):
 
 async def browser_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Browser automation using Playwright"""
+    if not await is_admin(update): return await admin_only(update)
     if not context.args:
         await update.message.reply_text(
             "🌐 Browser Control\n\n"
@@ -1517,6 +1544,7 @@ async def browser_control(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def take_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Quick screenshot of desktop or URL"""
+    if not await is_admin(update): return await admin_only(update)
     try:
         if context.args:
             # Screenshot of URL
