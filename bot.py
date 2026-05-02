@@ -10438,6 +10438,12 @@ def api_files():
 # Discord Client for Reading/Auto-reply
 discord_client = None
 
+# Advanced Discord Bot Data
+discord_warns = {}        # {user_id: [{"reason": "...", "author": "...", "time": 0}]}
+discord_levels = {}       # {user_id: {"xp": 0, "level": 1}}
+discord_economy = {}      # {user_id: {"balance": 0, "last_daily": 0}}
+discord_tickets = {}      # {channel_id: user_id}
+
 # Discord AI Bot Configuration
 discord_conversations = {}  # {user_id: [{"role": "user/assistant", "content": "..."}]}
 discord_cooldowns = {}  # {user_id: last_reply_timestamp}
@@ -10680,6 +10686,129 @@ async def start_discord_bot():
         
         await ctx.send("✅ **Verification system setup complete!** New members will now be locked until they use `!verify` in the verification channel.")
 
+    # --- MODERATION COMMANDS ---
+    @discord_client.command(name="warn")
+    @discord_commands.has_permissions(kick_members=True)
+    async def discord_warn(ctx, member: discord.Member, *, reason="No reason provided"):
+        """Warn a user"""
+        user_id = str(member.id)
+        if user_id not in discord_warns:
+            discord_warns[user_id] = []
+        discord_warns[user_id].append({"reason": reason, "author": ctx.author.name, "time": time.time()})
+        await ctx.send(f"⚠️ **{member.name}** has been warned!\n**Reason:** {reason}")
+
+    @discord_client.command(name="warns")
+    async def discord_view_warns(ctx, member: discord.Member):
+        """View user warnings"""
+        user_id = str(member.id)
+        if user_id not in discord_warns or not discord_warns[user_id]:
+            await ctx.send(f"✅ **{member.name}** has no warnings.")
+            return
+        
+        warn_list = "\n".join([f"{i+1}. {w['reason']} (by {w['author']})" for i, w in enumerate(discord_warns[user_id])])
+        await ctx.send(f"⚠️ **Warnings for {member.name}:**\n{warn_list}")
+
+    @discord_client.command(name="clearwarns")
+    @discord_commands.has_permissions(kick_members=True)
+    async def discord_clear_warns(ctx, member: discord.Member):
+        """Clear user warnings"""
+        user_id = str(member.id)
+        discord_warns[user_id] = []
+        await ctx.send(f"🧹 **Warnings cleared for {member.name}!**")
+
+    @discord_client.command(name="kick")
+    @discord_commands.has_permissions(kick_members=True)
+    async def discord_kick(ctx, member: discord.Member, *, reason="No reason provided"):
+        """Kick a user"""
+        await member.kick(reason=reason)
+        await ctx.send(f"👢 **{member.name}** has been kicked!\n**Reason:** {reason}")
+
+    @discord_client.command(name="ban")
+    @discord_commands.has_permissions(ban_members=True)
+    async def discord_ban(ctx, member: discord.Member, *, reason="No reason provided"):
+        """Ban a user"""
+        await member.ban(reason=reason)
+        await ctx.send(f"🔨 **{member.name}** has been banned!\n**Reason:** {reason}")
+
+    @discord_client.command(name="mute")
+    @discord_commands.has_permissions(manage_roles=True)
+    async def discord_mute(ctx, member: discord.Member, time_str="10m"):
+        """Mute a user (timeout)"""
+        import datetime
+        unit = time_str[-1].lower()
+        amount = int(time_str[:-1])
+        if unit == 'm': delta = datetime.timedelta(minutes=amount)
+        elif unit == 'h': delta = datetime.timedelta(hours=amount)
+        elif unit == 'd': delta = datetime.timedelta(days=amount)
+        else: delta = datetime.timedelta(minutes=10)
+        
+        await member.timeout(delta)
+        await ctx.send(f"🔇 **{member.name}** has been muted for {time_str}!")
+
+    @discord_client.command(name="unmute")
+    @discord_commands.has_permissions(manage_roles=True)
+    async def discord_unmute(ctx, member: discord.Member):
+        """Unmute a user"""
+        await member.timeout(None)
+        await ctx.send(f"🔊 **{member.name}** has been unmuted!")
+
+    # --- LEVELING & ECONOMY ---
+    @discord_client.command(name="rank")
+    async def discord_rank(ctx, member: discord.Member = None):
+        """Check level and XP"""
+        member = member or ctx.author
+        user_id = str(member.id)
+        data = discord_levels.get(user_id, {"xp": 0, "level": 1})
+        await ctx.send(f"📊 **{member.name}**\n**Level:** {data['level']}\n**XP:** {data['xp']}/{data['level']*100}")
+
+    @discord_client.command(name="daily")
+    async def discord_daily(ctx):
+        """Claim daily coins"""
+        user_id = str(ctx.author.id)
+        now = time.time()
+        last_daily = discord_economy.get(user_id, {}).get("last_daily", 0)
+        if now - last_daily < 86400:
+            remaining = int(86400 - (now - last_daily))
+            await ctx.send(f"⏳ **Too early!** Try again in {remaining//3600}h {(remaining%3600)//60}m.")
+            return
+        
+        if user_id not in discord_economy: discord_economy[user_id] = {"balance": 0, "last_daily": 0}
+        discord_economy[user_id]["balance"] += 100
+        discord_economy[user_id]["last_daily"] = now
+        await ctx.send(f"💰 **Daily claimed!** You received **100 coins**!")
+
+    @discord_client.command(name="bal")
+    async def discord_bal(ctx, member: discord.Member = None):
+        """Check balance"""
+        member = member or ctx.author
+        user_id = str(member.id)
+        balance = discord_economy.get(user_id, {}).get("balance", 0)
+        await ctx.send(f"💰 **{member.name}'s Balance:** {balance} coins")
+
+    # --- TICKET SYSTEM ---
+    @discord_client.command(name="ticket")
+    async def discord_ticket(ctx):
+        """Open a support ticket"""
+        guild = ctx.guild
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            ctx.author: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+            guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True)
+        }
+        channel = await guild.create_text_channel(f"ticket-{ctx.author.name}", overwrites=overwrites)
+        await channel.send(f"🎫 **Ticket Opened!** {ctx.author.mention}, please describe your issue. Type `!close` to end this ticket.")
+        await ctx.send(f"✅ Ticket created: {channel.mention}")
+
+    @discord_client.command(name="close")
+    async def discord_close(ctx):
+        """Close a ticket"""
+        if "ticket-" in ctx.channel.name:
+            await ctx.send("🔒 **Closing ticket in 5 seconds...**")
+            await asyncio.sleep(5)
+            await ctx.channel.delete()
+        else:
+            await ctx.send("❌ This is not a ticket channel.")
+
     @discord_client.event
     async def on_ready():
         add_to_logs(f"Discord Bot connected as {discord_client.user}")
@@ -10700,35 +10829,37 @@ async def start_discord_bot():
     async def discord_help(ctx):
         """Show available Discord bot commands"""
         help_text = """
-🤖 **AI Discord Bot Commands**
+🤖 **Einstein Bot - Advanced Commands**
 
-**AI Auto-Reply Commands:**
-`!on` - Enable AI auto-reply (bot replies to all messages)
-`!off` - Disable AI auto-reply
-`!personality <mode>` - Set personality: friendly/funny/serious/gamer
-`!clear` - Clear conversation memory
+**🛡️ Moderation:**
+`!warn @user <reason>` - Warn a user
+`!warns @user` - View user warnings
+`!clearwarns @user` - Clear user warnings
+`!kick @user <reason>` - Kick a user
+`!ban @user <reason>` - Ban a user
+`!mute @user <time>` - Mute a user (e.g. 10m, 1h)
+`!unmute @user` - Unmute a user
 
-**Basic Commands:**
-`!bothelp` - Show this help message
-`!ping` - Check bot latency
-`!status` - Show system status
-`!calc <expression>` - Calculate (e.g., !calc 2+2)
-`!time` - Show current time
-`!fact` - Get a random science fact
-`!joke` - Get a random joke
+**📈 Leveling & Economy:**
+`!rank` - Check your level and XP
+`!leaderboard` - See top users
+`!daily` - Claim daily coins
+`!bal` - Check your balance
+`!pay @user <amount>` - Send coins to someone
+`!shop` - View items for sale
 
-**Utility Commands:**
-`!poll <question> | <option1> | <option2>` - Create a poll
-`!roll` - Roll a dice (1-6)
-`!coin` - Flip a coin
-`!8ball <question>` - Ask the magic 8-ball
+**🎫 Support:**
+`!ticket` - Open a support ticket
+`!close` - Close an active ticket
 
-**Features:**
-• Responds naturally like a human
-• Remembers conversation context
-• 5-10 second cooldown per user (prevents spam)
-• Shows typing indicator before replying
-• Uses OpenAI or free local AI (Ollama)
+**🤖 AI & Auto-Reply:**
+`!on` / `!off` - Toggle AI auto-reply
+`!personality <mode>` - Set AI mood
+`!clear` - Clear AI memory
+
+**🎮 Fun & Utils:**
+`!ping`, `!status`, `!calc`, `!time`, `!fact`, `!joke`
+`!poll`, `!roll`, `!coin`, `!8ball`
         """
         await ctx.send(help_text)
 
@@ -10967,6 +11098,33 @@ async def start_discord_bot():
 
         # If not a command or FAQ, log for AI
         print(f"DEBUG: Processing as regular message for AI: {content}")
+        
+        # --- LEVELING SYSTEM (XP on every message) ---
+        user_id_str = str(user_id)
+        if user_id_str not in discord_levels:
+            discord_levels[user_id_str] = {"xp": 0, "level": 1}
+        
+        discord_levels[user_id_str]["xp"] += 5
+        level_up_xp = discord_levels[user_id_str]["level"] * 100
+        
+        if discord_levels[user_id_str]["xp"] >= level_up_xp:
+            discord_levels[user_id_str]["level"] += 1
+            discord_levels[user_id_str]["xp"] = 0
+            try:
+                await message.channel.send(f"🎊 {message.author.mention} leveled up to **Level {discord_levels[user_id_str]['level']}**! Keep it up! 🚀")
+            except:
+                pass
+
+        # --- AUTO-MODERATION (Simple Word Filter) ---
+        bad_words = ["spam", "hack", "scam"] # Example words
+        if any(word in lower_content for word in bad_words):
+            try:
+                await message.delete()
+                await message.channel.send(f"⚠️ {message.author.mention}, your message contained restricted content and was removed.", delete_after=5)
+                return
+            except:
+                pass
+
         channel_info = f"DM with {message.author}" if isinstance(message.channel, discord.DMChannel) else f"channel {message.channel} in {message.guild}"
         add_to_logs(f"Discord Event: Message from {message.author} in {channel_info}")
         
