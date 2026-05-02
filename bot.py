@@ -18,12 +18,19 @@ import asyncio
 import hashlib
 import hmac
 import secrets
+import ssl
+import certifi
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand
 from telegram.constants import ChatAction
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 from flask import Flask, render_template_string, request, jsonify
+
+# Fix SSL certificate issues on Windows
+os.environ['SSL_CERT_FILE'] = certifi.where()
+os.environ['REQUESTS_CA_BUNDLE'] = certifi.where()
+ssl._create_default_https_context = ssl._create_unverified_context
 
 # Import multi-language support
 from languages import detect_language, get_text, get_language_name, LANGUAGES
@@ -1967,11 +1974,12 @@ async def reminders_manager(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if action == "add" and len(context.args) >= 3:
             time_str = context.args[1]
             message = " ".join(context.args[2:])
-            
+
             reminder = {
                 "id": len(reminders) + 1,
                 "time": time_str,
                 "message": message,
+                "chat_id": update.effective_chat.id,
                 "created": datetime.now().isoformat(),
                 "done": False
             }
@@ -10430,15 +10438,476 @@ def api_files():
 # Discord Client for Reading/Auto-reply
 discord_client = None
 
+# Discord AI Bot Configuration
+discord_conversations = {}  # {user_id: [{"role": "user/assistant", "content": "..."}]}
+discord_cooldowns = {}  # {user_id: last_reply_timestamp}
+discord_auto_reply_enabled = True
+discord_personality_mode = "friendly"  # friendly, funny, serious, gamer
+
+DISCORD_PERSONALITIES = {
+    "friendly": "You are a friendly, warm, and approachable person. Respond casually like a good friend chatting. Use emojis naturally. Keep replies short (1-2 sentences).",
+    "funny": "You are hilarious and witty. Make jokes, use puns, and be playful. Keep it light and entertaining. Use emojis. Keep replies short and funny.",
+    "serious": "You are professional and thoughtful. Give well-reasoned, intelligent responses. Be concise and direct. No emojis. Keep replies brief.",
+    "gamer": "You are a gamer who loves video games and gaming culture. Use gaming slang, 'gg', 'wp', 'noob', 'pog', etc. Be enthusiastic. Keep replies short."
+}
+
+# Custom FAQ Responses for common greetings and emojis
+DISCORD_FAQ = {
+    "hi": "Hello there! How can I help you today? 😊",
+    "hello": "Hi! Einstein System at your service. 👨‍🔬",
+    "hey": "Hey! Need some science facts or just want to chat? 🧪",
+    "how are you": "I'm functioning at 100% capacity! How about you? ⚙️",
+    "what is your name": "I am the Einstein System, your AI assistant. 🤖",
+    "bye": "Goodbye! Have a great day! 👋",
+    "good morning": "Good morning! Ready for some discoveries today? ☀️",
+    "good night": "Good night! System entering low-power mode... 😴",
+    "😊": "You look happy! That's great to see! ✨",
+    "❤️": "Much love! How can I assist you today? 💖",
+    "😂": "Glad I could make you laugh! Hahaha! 🤣",
+    "👍": "Awesome! I'm here if you need anything else. ✅",
+    "🔥": "That's fire! You're doing great! ⚡",
+    "🤖": "Beep boop! Fellow robot detected. 🦾",
+    "🍎": "An apple a day keeps the doctor away... but I prefer a physics book! 📚",
+    "🚀": "To infinity and beyond! Ready for a space fact? 🌌",
+    "💎": "Shine bright like a diamond! You're valuable. 🌟",
+    "🎉": "Congratulations! Let's celebrate! 🎈"
+}
+
+async def get_ai_response_discord(user_id, message_content, max_tokens=80):
+    """Get AI response for Discord with conversation memory"""
+    try:
+        # Initialize conversation history for new users
+        if user_id not in discord_conversations:
+            discord_conversations[user_id] = []
+        
+        # Add user message to history
+        discord_conversations[user_id].append({"role": "user", "content": message_content})
+        
+        # Keep only last 5 messages for context (to save tokens)
+        if len(discord_conversations[user_id]) > 5:
+            discord_conversations[user_id] = discord_conversations[user_id][-5:]
+        
+        # Get personality prompt
+        personality_prompt = DISCORD_PERSONALITIES.get(discord_personality_mode, DISCORD_PERSONALITIES["friendly"])
+        
+        # Build conversation context
+        messages = [
+            {"role": "system", "content": f"{personality_prompt} Respond naturally like a human. Be conversational, not robotic. Never mention you're an AI."}
+        ]
+        messages.extend(discord_conversations[user_id])
+        
+        # Try OpenAI first if API key is available
+        openai_key = os.getenv("OPENAI_API_KEY")
+        if openai_key and openai_key != "your_openai_key_here":
+            headers = {
+                "Authorization": f"Bearer {openai_key}",
+                "Content-Type": "application/json"
+            }
+            data = {
+                "model": "gpt-3.5-turbo",
+                "messages": messages,
+                "max_tokens": max_tokens,
+                "temperature": 0.8
+            }
+            resp = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers=headers,
+                json=data,
+                timeout=10
+            )
+            if resp.status_code == 200:
+                reply = resp.json()["choices"][0]["message"]["content"].strip()
+                # Add assistant response to history
+                discord_conversations[user_id].append({"role": "assistant", "content": reply})
+                return reply
+        
+        # Fallback to Pollinations AI if Ollama/OpenAI fails
+        if not openai_key or openai_key == "your_openai_key_here":
+            try:
+                # Use Pollinations AI (free, no key required)
+                personality_prompt = DISCORD_PERSONALITIES.get(discord_personality_mode, DISCORD_PERSONALITIES["friendly"])
+                system_msg = f"{personality_prompt} Respond naturally like a human. Be conversational, not robotic. Never mention you're an AI."
+                
+                # Build context for URL
+                prompt_context = " ".join([m['content'] for m in discord_conversations[user_id][-3:]])
+                encoded_prompt = requests.utils.quote(f"System: {system_msg}\nConversation: {prompt_context}")
+                
+                pollinations_url = f"https://text.pollinations.ai/{encoded_prompt}"
+                resp = requests.get(pollinations_url, timeout=10)
+                
+                if resp.status_code == 200:
+                    reply = resp.text.strip()
+                    if reply:
+                        discord_conversations[user_id].append({"role": "assistant", "content": reply})
+                        return reply
+            except Exception as p_err:
+                print(f"DEBUG: Pollinations fallback error: {p_err}")
+
+        # Fallback to Ollama (free local AI) if configured
+        try:
+            ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2")
+            
+            # Build prompt for Ollama
+            context_text = "\n".join([f"{'User' if m['role'] == 'user' else 'You'}: {m['content']}" for m in discord_conversations[user_id][:-1]])
+            current_message = discord_conversations[user_id][-1]["content"]
+            
+            ollama_prompt = f"""{personality_prompt}
+
+Previous conversation:
+{context_text}
+
+User just said: {current_message}
+
+Reply naturally as a human friend (1-2 short sentences max):"""
+            
+            resp = requests.post(
+                "http://localhost:11434/api/generate",
+                json={
+                    "model": ollama_model,
+                    "prompt": ollama_prompt,
+                    "stream": False,
+                    "options": {"num_predict": max_tokens}
+                },
+                timeout=10
+            )
+            if resp.status_code == 200:
+                reply = resp.json().get('response', '').strip()
+                # Clean up the response
+                reply = reply.replace("User:", "").replace("You:", "").strip()
+                if reply:
+                    # Add assistant response to history
+                    discord_conversations[user_id].append({"role": "assistant", "content": reply})
+                    return reply
+        except Exception as o_err:
+            print(f"DEBUG: Ollama fallback error: {o_err}")
+        
+        return "I'm here! How can I help you today? 😊" # Final hardcoded fallback
+
+    except Exception as e:
+        print(f"DEBUG: AI Discord response error: {e}")
+        return None
+
+def is_discord_cooldown_passed(user_id):
+    """Check if cooldown period has passed (5-10 seconds random)"""
+    import random
+    last_reply = discord_cooldowns.get(user_id, 0)
+    cooldown_seconds = random.randint(5, 10)
+    return (time.time() - last_reply) >= cooldown_seconds
+
+def update_discord_cooldown(user_id):
+    """Update last reply time for cooldown tracking"""
+    discord_cooldowns[user_id] = time.time()
+
 async def start_discord_bot():
     global discord_client
     if not DISCORD_BOT_TOKEN or DISCORD_BOT_TOKEN == "your_discord_bot_token_here":
         add_to_logs("Discord Bot Token not set. Auto-reply disabled.")
         return
 
+    # Standard intents to fix startup error
     intents = discord.Intents.default()
-    intents.message_content = True
+    intents.message_content = True 
+    intents.members = True # Required for on_member_join
     discord_client = discord_commands.Bot(command_prefix="!", intents=intents)
+
+    @discord_client.event
+    async def on_member_join(member):
+        """Handle new member joins - Add unverified role and send instructions"""
+        try:
+            # Find or create 'Unverified' role
+            unverified_role = discord.utils.get(member.guild.roles, name="Unverified")
+            if not unverified_role:
+                # Create the role if it doesn't exist (requires Manage Roles permission)
+                unverified_role = await member.guild.create_role(name="Unverified", reason="Verification system setup")
+                # Move it to a proper position if needed, or just let user configure it
+            
+            await member.add_roles(unverified_role)
+            print(f"DEBUG: Added Unverified role to {member.name}")
+
+            # Find a verification channel or send a DM
+            verify_channel = discord.utils.get(member.guild.text_channels, name="verify") or \
+                             discord.utils.get(member.guild.text_channels, name="verification")
+            
+            if verify_channel:
+                await verify_channel.send(f"👋 Welcome {member.mention}! To access the rest of the server, please use the `!verify` command here.")
+            else:
+                try:
+                    await member.send(f"👋 Welcome to **{member.guild.name}**! Please go to the verification channel and use `!verify` to get access.")
+                except:
+                    pass # DMs might be closed
+        except Exception as e:
+            print(f"DEBUG: Error in on_member_join: {e}")
+
+    @discord_client.command(name="verify")
+    async def discord_verify(ctx):
+        """Verify command to remove unverified role"""
+        user = ctx.author
+        unverified_role = discord.utils.get(ctx.guild.roles, name="Unverified")
+        
+        if unverified_role in user.roles:
+            try:
+                await user.remove_roles(unverified_role)
+                await ctx.reply("✅ **Verification Successful!** You now have full access to the server. Enjoy! 🎉")
+                print(f"DEBUG: {user.name} verified successfully.")
+            except Exception as e:
+                await ctx.reply(f"❌ **Error:** I don't have permission to manage roles. Please contact an admin.")
+                print(f"DEBUG: Verification error: {e}")
+        else:
+            await ctx.reply("ℹ️ You are already verified!")
+
+    @discord_client.command(name="setup_verify")
+    @discord_commands.has_permissions(administrator=True)
+    async def setup_verify(ctx):
+        """Setup verification role and permissions (Admin only)"""
+        guild = ctx.guild
+        unverified_role = discord.utils.get(guild.roles, name="Unverified")
+        
+        if not unverified_role:
+            unverified_role = await guild.create_role(name="Unverified")
+            await ctx.send("✅ Created **Unverified** role.")
+        
+        # Lock down all channels except verify channel
+        await ctx.send("🛠️ **Setting up channel permissions...** (This might take a moment)")
+        
+        for channel in guild.channels:
+            if isinstance(channel, discord.TextChannel):
+                if channel.name.lower() in ["verify", "verification"]:
+                    # Allow unverified to see and talk in verify channel
+                    await channel.set_permissions(unverified_role, read_messages=True, send_messages=True)
+                else:
+                    # Deny unverified from seeing other channels
+                    await channel.set_permissions(unverified_role, read_messages=False)
+        
+        await ctx.send("✅ **Verification system setup complete!** New members will now be locked until they use `!verify` in the verification channel.")
+
+    @discord_client.event
+    async def on_ready():
+        add_to_logs(f"Discord Bot connected as {discord_client.user}")
+        print(f"✅ Discord Bot logged in as {discord_client.user}")
+        # Send a test message to a channel to verify it's working
+        for guild in discord_client.guilds:
+            for channel in guild.text_channels:
+                try:
+                    await channel.send("👨‍🔬 **Einstein System Initialized.** System is now monitoring this sector for transmissions.")
+                    print(f"DEBUG: Sent startup message to {channel.name} in {guild.name}")
+                    break # Just one channel per guild
+                except:
+                    continue
+
+    # --- DISCORD BOT TASKS/COMMANDS ---
+
+    @discord_client.command(name="bothelp")
+    async def discord_help(ctx):
+        """Show available Discord bot commands"""
+        help_text = """
+🤖 **AI Discord Bot Commands**
+
+**AI Auto-Reply Commands:**
+`!on` - Enable AI auto-reply (bot replies to all messages)
+`!off` - Disable AI auto-reply
+`!personality <mode>` - Set personality: friendly/funny/serious/gamer
+`!clear` - Clear conversation memory
+
+**Basic Commands:**
+`!bothelp` - Show this help message
+`!ping` - Check bot latency
+`!status` - Show system status
+`!calc <expression>` - Calculate (e.g., !calc 2+2)
+`!time` - Show current time
+`!fact` - Get a random science fact
+`!joke` - Get a random joke
+
+**Utility Commands:**
+`!poll <question> | <option1> | <option2>` - Create a poll
+`!roll` - Roll a dice (1-6)
+`!coin` - Flip a coin
+`!8ball <question>` - Ask the magic 8-ball
+
+**Features:**
+• Responds naturally like a human
+• Remembers conversation context
+• 5-10 second cooldown per user (prevents spam)
+• Shows typing indicator before replying
+• Uses OpenAI or free local AI (Ollama)
+        """
+        await ctx.send(help_text)
+
+    @discord_client.command(name="ping")
+    async def discord_ping(ctx):
+        """Check bot latency"""
+        latency = round(discord_client.latency * 1000)
+        await ctx.send(f"🏓 **Pong!** Latency: `{latency}ms`")
+
+    @discord_client.command(name="status")
+    async def discord_status(ctx):
+        """Show system status"""
+        import psutil
+        cpu_percent = psutil.cpu_percent(interval=1)
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage('/')
+        
+        status_text = f"""
+⚙️ **System Status**
+
+🖥️ **CPU:** `{cpu_percent}%`
+💾 **RAM:** `{memory.percent}%` used ({memory.used // (1024**3)}GB / {memory.total // (1024**3)}GB)
+💿 **Disk:** `{disk.percent}%` used ({disk.used // (1024**3)}GB / {disk.total // (1024**3)}GB)
+🔌 **Latency:** `{round(discord_client.latency * 1000)}ms`
+        """
+        await ctx.send(status_text)
+
+    @discord_client.command(name="calc")
+    async def discord_calc(ctx, *, expression):
+        """Calculate mathematical expression"""
+        try:
+            # Safe eval for basic math operations
+            allowed_chars = set('0123456789+-*/().^ ')
+            if all(c in allowed_chars for c in expression):
+                # Replace ^ with ** for power
+                expression = expression.replace('^', '**')
+                result = eval(expression)
+                await ctx.send(f"🔢 **Calculation:** `{expression}` = **`{result}`**")
+            else:
+                await ctx.send("❌ Invalid characters in expression. Use only: 0-9, +, -, *, /, (, ), ^")
+        except Exception as e:
+            await ctx.send(f"❌ Error: {str(e)}")
+
+    @discord_client.command(name="time")
+    async def discord_time(ctx):
+        """Show current time"""
+        from datetime import datetime
+        now = datetime.now()
+        time_text = f"🕐 **Current Time:** `{now.strftime('%Y-%m-%d %H:%M:%S')}`"
+        await ctx.send(time_text)
+
+    @discord_client.command(name="fact")
+    async def discord_fact(ctx):
+        """Get a random science fact"""
+        import random
+        facts = [
+            "🔬 Light takes 8 minutes and 20 seconds to travel from the Sun to Earth.",
+            "🧬 DNA stands for Deoxyribonucleic Acid.",
+            "⚛️ A teaspoonful of neutron star would weigh about 6 billion tons.",
+            "🌌 The Milky Way galaxy is about 100,000 light-years in diameter.",
+            "🧪 Water expands by about 9% when it freezes.",
+            "🔭 The Hubble Space Telescope has made over 1.5 million observations.",
+            "⚡ The average lightning bolt contains enough energy to toast 100,000 slices of bread."
+        ]
+        await ctx.send(random.choice(facts))
+
+    @discord_client.command(name="joke")
+    async def discord_joke(ctx):
+        """Get a random joke"""
+        import random
+        jokes = [
+            "Why don't scientists trust atoms? Because they make up everything!",
+            "Why did the physicist break up with the biologist? There was no chemistry.",
+            "What do you call a fake noodle? An impasta!",
+            "Why don't eggs tell jokes? They'd crack each other up!",
+            "What do you call a bear with no teeth? A gummy bear!",
+            "Why did the math book look sad? Because it had too many problems."
+        ]
+        await ctx.send(f"😄 **Joke:** {random.choice(jokes)}")
+
+    @discord_client.command(name="roll")
+    async def discord_roll(ctx):
+        """Roll a dice"""
+        import random
+        result = random.randint(1, 6)
+        await ctx.send(f"🎲 **Rolled:** `{result}`")
+
+    @discord_client.command(name="coin")
+    async def discord_coin(ctx):
+        """Flip a coin"""
+        import random
+        result = random.choice(["Heads", "Tails"])
+        await ctx.send(f"🪙 **Coin Flip:** `{result}`")
+
+    @discord_client.command(name="8ball")
+    async def discord_8ball(ctx, *, question):
+        """Ask the magic 8-ball"""
+        import random
+        responses = [
+            "🟢 It is certain.", "🟢 It is decidedly so.", "🟢 Without a doubt.",
+            "🟢 Yes definitely.", "🟢 You may rely on it.", "🟢 As I see it, yes.",
+            "🟢 Most likely.", "🟢 Outlook good.", "🟢 Yes.", "🟢 Signs point to yes.",
+            "🟡 Reply hazy, try again.", "🟡 Ask again later.", "🟡 Better not tell you now.",
+            "🟡 Cannot predict now.", "🟡 Concentrate and ask again.",
+            "🔴 Don't count on it.", "🔴 My reply is no.", "🔴 My sources say no.",
+            "🔴 Outlook not so good.", "🔴 Very doubtful."
+        ]
+        await ctx.send(f"🎱 **Question:** {question}\n**Answer:** {random.choice(responses)}")
+
+    @discord_client.command(name="poll")
+    async def discord_poll(ctx, *, args):
+        """Create a poll: !poll Question | Option1 | Option2"""
+        try:
+            parts = args.split("|")
+            if len(parts) < 2:
+                await ctx.send("❌ Format: `!poll Question | Option1 | Option2`")
+                return
+            
+            question = parts[0].strip()
+            options = [p.strip() for p in parts[1:]]
+            
+            if len(options) > 10:
+                await ctx.send("❌ Maximum 10 options allowed.")
+                return
+                
+            poll_text = f"📊 **Poll:** {question}\n\n"
+            emojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
+            
+            for i, option in enumerate(options):
+                poll_text += f"{emojis[i]} {option}\n"
+            
+            poll_message = await ctx.send(poll_text)
+            
+            # Add reactions
+            for i in range(len(options)):
+                await poll_message.add_reaction(emojis[i])
+                
+        except Exception as e:
+            await ctx.send(f"❌ Error creating poll: {str(e)}")
+
+    # --- AI AUTO-REPLY COMMANDS ---
+
+    @discord_client.command(name="on")
+    async def discord_auto_on(ctx):
+        global discord_auto_reply_enabled
+        discord_auto_reply_enabled = True
+        await ctx.send("✅ **AI Auto-reply ENABLED.** I will now reply to all messages!")
+
+    @discord_client.command(name="off")
+    async def discord_off(ctx):
+        global discord_auto_reply_enabled
+        discord_auto_reply_enabled = False
+        await ctx.send("🛑 **AI Auto-reply DISABLED.** I will only respond to commands.")
+
+    @discord_client.command(name="personality")
+    async def discord_personality(ctx, mode: str):
+        global discord_personality_mode
+        mode = mode.lower()
+        if mode in DISCORD_PERSONALITIES:
+            discord_personality_mode = mode
+            personality_emojis = {
+                "friendly": "😊",
+                "funny": "😂",
+                "serious": "🧐",
+                "gamer": "🎮"
+            }
+            await ctx.send(f"{personality_emojis.get(mode, '🎭')} **Personality set to:** `{mode}`\nI'm ready to chat!")
+        else:
+            await ctx.send("❌ Invalid mode. Use: `friendly`, `funny`, `serious`, or `gamer`")
+
+    @discord_client.command(name="clear")
+    async def discord_clear_memory(ctx):
+        """Clear conversation memory for this user"""
+        user_id = ctx.author.id
+        if user_id in discord_conversations:
+            discord_conversations[user_id] = []
+            await ctx.send("🧹 **Memory cleared!** I've forgotten our previous conversation. Fresh start! 🌟")
+        else:
+            await ctx.send("📭 **No memory to clear.** We haven't chatted yet!")
 
     @discord_client.event
     async def on_ready():
@@ -10456,48 +10925,87 @@ async def start_discord_bot():
 
     @discord_client.event
     async def on_message(message):
-        print(f"DEBUG: Discord message received from {message.author}: {message.content}")
-        # Explicitly log to bot dashboard logs for visibility
-        add_to_logs(f"Discord Event: Message from {message.author} in {message.channel}")
+        user_id = message.author.id
+        content = message.content.strip()
+        print(f"DEBUG: Message received from {message.author}: '{content}'")
+        add_to_logs(f"Discord DEBUG: Message from {message.author}")
+        
+        # Ignore bot messages (including self)
+        if message.author.bot:
+            print(f"DEBUG: Ignoring bot message from {message.author}")
+            return
         
         if message.author == discord_client.user:
             return
 
-        # Einstein "Instant" Response logic
+        # Process commands first (like !help, !on, !off)
+        ctx = await discord_client.get_context(message)
+        if ctx.valid:
+            print(f"DEBUG: Valid command detected: {content}")
+            try:
+                await discord_client.invoke(ctx)
+                print(f"DEBUG: Command '{content}' executed successfully")
+                return
+            except Exception as cmd_err:
+                print(f"DEBUG: Command error for '{content}': {cmd_err}")
+                add_to_logs(f"Discord Command Error: {cmd_err}")
+                await message.channel.send(f"❌ Command error: {str(cmd_err)}")
+                return
+        else:
+            if content.startswith("!"):
+                print(f"DEBUG: Invalid command or prefix mismatch: {content}")
+        
+        # Check for custom FAQ/Greetings first
+        lower_content = content.lower()
+        if lower_content in DISCORD_FAQ:
+            reply = DISCORD_FAQ[lower_content]
+            print(f"DEBUG: FAQ response found for '{lower_content}': {reply}")
+            mention = message.author.mention
+            await message.reply(f"{mention} {reply}")
+            update_discord_cooldown(user_id)
+            return
+
+        # If not a command or FAQ, log for AI
+        print(f"DEBUG: Processing as regular message for AI: {content}")
+        channel_info = f"DM with {message.author}" if isinstance(message.channel, discord.DMChannel) else f"channel {message.channel} in {message.guild}"
+        add_to_logs(f"Discord Event: Message from {message.author} in {channel_info}")
+        
+        # Check if auto-reply is enabled
+        if not discord_auto_reply_enabled:
+            print("DEBUG: Auto-reply is disabled")
+            return
+        
+        # Don't reply to commands that weren't recognized
+        if content.startswith("!"):
+            return
+        
+        # Cooldown check
+        if not is_discord_cooldown_passed(user_id):
+            print(f"DEBUG: Cooldown active for user {user_id}")
+            return
+
+        # AI Response
         try:
-            # Process command if any (like !help)
-            await discord_client.process_commands(message)
-            
             async with message.channel.typing():
-                reply_text = f"👨‍🔬 *Einstein here.* Analyzing your transmission in {message.channel}: '{message.content}'..."
-                
-                try:
-                    # Use a slightly faster prompt for "instant" feel
-                    ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2")
-                    resp = requests.post(
-                        "http://localhost:11434/api/generate",
-                        json={
-                            "model": ollama_model,
-                            "prompt": f"Act as Albert Einstein. A student said '{message.content}' in the {message.channel} channel. Give a very short, brilliant, and instant reply.",
-                            "stream": False
-                        },
-                        timeout=5
-                    )
-                    if resp.status_code == 200:
-                        reply_text = resp.json().get('response', reply_text)
-                except Exception as ai_err:
-                    print(f"DEBUG: AI Response error: {ai_err}")
-                    add_to_logs(f"AI Error: {ai_err}")
-                    
-                await message.reply(reply_text)
-                print(f"DEBUG: Reply sent to {message.author}")
+                ai_reply = await get_ai_response_discord(user_id, content)
+                if ai_reply:
+                    mention = message.author.mention
+                    await message.reply(f"{mention} {ai_reply}")
+                    update_discord_cooldown(user_id)
+                    print(f"DEBUG: AI reply sent to {message.author}: {ai_reply[:50]}...")
+                else:
+                    print("DEBUG: No AI reply generated")
         except Exception as msg_err:
-            print(f"DEBUG: Error sending Discord reply: {msg_err}")
-            add_to_logs(f"Discord Reply Error: {msg_err}")
+            print(f"DEBUG: Error in Discord auto-reply: {msg_err}")
+            add_to_logs(f"Discord AI Reply Error: {msg_err}")
 
     try:
         await discord_client.start(DISCORD_BOT_TOKEN)
+    except asyncio.CancelledError:
+        print("DEBUG: Discord bot connection cancelled")
+        add_to_logs("Discord Bot: Connection cancelled gracefully")
     except Exception as e:
+        print(f"DEBUG: Discord bot startup error: {e}")
         add_to_logs(f"Discord Bot Error: {e}")
 
 def run_flask():
@@ -10510,8 +11018,18 @@ def run_bot():
     if not TOKEN or TOKEN == "YOUR_BOT_TOKEN_HERE":
         print("Error: TELEGRAM_BOT_TOKEN not set in .env")
         return
-        
-    bot_app = ApplicationBuilder().token(TOKEN).read_timeout(60).write_timeout(60).connect_timeout(60).pool_timeout(60).build()
+    
+    # Create a custom request with proper SSL handling for Windows
+    from telegram.request import HTTPXRequest
+    custom_request = HTTPXRequest(
+        connection_pool_size=8,
+        read_timeout=60,
+        write_timeout=60,
+        connect_timeout=60,
+        pool_timeout=60
+    )
+    
+    bot_app = ApplicationBuilder().token(TOKEN).build()
     
     # --- CORE COMMANDS ---
     bot_app.add_handler(CommandHandler("start", start))
@@ -10703,7 +11221,7 @@ if __name__ == '__main__':
         print("Error: TELEGRAM_BOT_TOKEN not set in .env")
     else:
         # Create all necessary folders first
-        print("🗂️  Initializing bot folders...")
+        print("[INIT] Initializing bot folders...")
         create_bot_folders()
         
         # Start background cleanup thread
