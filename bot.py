@@ -10444,6 +10444,8 @@ discord_levels = {}       # {user_id: {"xp": 0, "level": 1}}
 discord_economy = {}      # {user_id: {"balance": 0, "last_daily": 0}}
 discord_tickets = {}      # {channel_id: user_id}
 discord_daily_replies = {} # {user_id: last_reply_date_string}
+last_youtube_video_id = None
+last_facebook_post_id = None
 
 # Discord AI Bot Configuration
 discord_conversations = {}  # {user_id: [{"role": "user/assistant", "content": "..."}]}
@@ -10480,8 +10482,60 @@ DISCORD_FAQ = {
     "🎉": "Congratulations! Let's celebrate! 🎈"
 }
 
+def analyze_and_reply_mini_ai(question):
+    """Mini AI logic to analyze and reply to user questions locally"""
+    q = question.lower()
+    
+    # 1. Keywords mapping for common questions
+    mini_ai_knowledge = {
+        "who are you": "I am Einstein System, a mini-AI developed to assist you with tasks, moderation, and chat!",
+        "what can you do": "I can moderate servers, track XP, manage economy, notify social media updates, and talk to you!",
+        "help": "You can type `!bothelp` to see a full list of my commands!",
+        "creator": "I was created to be a powerful assistant for the SURJO LIVE server.",
+        "owner": "My owner is the administrator of this server. You can find them in the member list!",
+        "weather": "I can check the weather if you use my Telegram version or wait for my next Discord update!",
+        "time": "You can use `!time` to see the current time and date.",
+        "joke": "Try `!joke` for a scientific laugh!",
+        "fact": "Type `!fact` to learn something new about science!",
+        "ping": "Use `!ping` to check my response speed.",
+        "version": "I am currently running on Einstein-Bot Version 3.5.0.",
+        "status": "Check `!status` to see my system health and resource usage."
+    }
+
+    # 2. Pattern matching
+    for key, response in mini_ai_knowledge.items():
+        if key in q:
+            return response
+
+    # 3. Simple Math Analysis
+    import re
+    math_pattern = re.search(r"(\d+)\s*([\+\-\*\/])\s*(\d+)", q)
+    if math_pattern:
+        try:
+            num1 = int(math_pattern.group(1))
+            op = math_pattern.group(2)
+            num2 = int(math_pattern.group(3))
+            if op == '+': res = num1 + num2
+            elif op == '-': res = num1 - num2
+            elif op == '*': res = num1 * num2
+            elif op == '/': res = num1 / num2 if num2 != 0 else "undefined"
+            return f"I analyzed your math question: {num1} {op} {num2} = {res}"
+        except:
+            pass
+
+    # 4. Fallback for unknown questions
+    if "?" in q:
+        return "That's an interesting question! I don't have a specific local answer for that yet, but I'm learning every day. Try asking something about my features!"
+        
+    return None
+
 async def get_ai_response_discord(user_id, message_content, max_tokens=80):
     """Get AI response for Discord with conversation memory"""
+    # Try Mini AI first for instant local analysis
+    mini_response = analyze_and_reply_mini_ai(message_content)
+    if mini_response:
+        return mini_response
+
     try:
         # Initialize conversation history for new users
         if user_id not in discord_conversations:
@@ -10814,6 +10868,10 @@ async def start_discord_bot():
     async def on_ready():
         add_to_logs(f"Discord Bot connected as {discord_client.user}")
         print(f"✅ Discord Bot logged in as {discord_client.user}")
+        
+        # Start the social media notification loop
+        discord_client.loop.create_task(check_social_updates())
+
         # Send a test message to a channel to verify it's working
         for guild in discord_client.guilds:
             for channel in guild.text_channels:
@@ -10823,6 +10881,66 @@ async def start_discord_bot():
                     break # Just one channel per guild
                 except:
                     continue
+
+    async def check_social_updates():
+        """Background task to check for YouTube and Facebook updates"""
+        global last_youtube_video_id, last_facebook_post_id
+        await discord_client.wait_until_ready()
+        
+        # Find notification channel
+        notif_channel = None
+        while not discord_client.is_closed():
+            try:
+                if not notif_channel:
+                    for guild in discord_client.guilds:
+                        notif_channel = discord.utils.get(guild.text_channels, name="announcements") or \
+                                        discord.utils.get(guild.text_channels, name="updates")
+                        if not notif_channel:
+                            for channel in guild.text_channels:
+                                if channel.permissions_for(guild.me).send_messages:
+                                    notif_channel = channel
+                                    break
+                        if notif_channel: break
+
+                if not notif_channel:
+                    print("DEBUG: No notification channel found for social updates.")
+                else:
+                    # 1. Check YouTube
+                    if YOUTUBE_API_KEY and YOUTUBE_CHANNEL_ID:
+                        yt_url = f"https://www.googleapis.com/youtube/v3/search?key={YOUTUBE_API_KEY}&channelId={YOUTUBE_CHANNEL_ID}&part=snippet,id&order=date&maxResults=1"
+                        async with httpx.AsyncClient() as client:
+                            resp = await client.get(yt_url)
+                            if resp.status_code == 200:
+                                data = resp.json()
+                                if data.get("items"):
+                                    item = data["items"][0]
+                                    video_id = item["id"].get("videoId")
+                                    if video_id and video_id != last_youtube_video_id:
+                                        last_youtube_video_id = video_id
+                                        title = item["snippet"]["title"]
+                                        await notif_channel.send(f"🎥 **New YouTube Video!**\n**{title}**\nhttps://www.youtube.com/watch?v={video_id}")
+                                        print(f"DEBUG: YouTube notification sent: {video_id}")
+
+                    # 2. Check Facebook (Page Posts)
+                    if FACEBOOK_PAGE_TOKEN and FACEBOOK_PAGE_ID:
+                        fb_url = f"https://graph.facebook.com/v19.0/{FACEBOOK_PAGE_ID}/posts?access_token={FACEBOOK_PAGE_TOKEN}&limit=1"
+                        async with httpx.AsyncClient() as client:
+                            resp = await client.get(fb_url)
+                            if resp.status_code == 200:
+                                data = resp.json()
+                                if data.get("data"):
+                                    post = data["data"][0]
+                                    post_id = post["id"]
+                                    if post_id != last_facebook_post_id:
+                                        last_facebook_post_id = post_id
+                                        message_content = post.get("message", "New post on Facebook!")
+                                        await notif_channel.send(f"📘 **New Facebook Post!**\n{message_content[:200]}...\nhttps://www.facebook.com/{post_id}")
+                                        print(f"DEBUG: Facebook notification sent: {post_id}")
+
+            except Exception as e:
+                print(f"DEBUG: Error in check_social_updates: {e}")
+            
+            await asyncio.sleep(300) # Check every 5 minutes
 
     # --- DISCORD BOT TASKS/COMMANDS ---
 
