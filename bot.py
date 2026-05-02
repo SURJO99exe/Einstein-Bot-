@@ -10445,29 +10445,33 @@ discord_levels = {}       # {user_id: {"xp": 0, "level": 1}}
 discord_economy = {}      # {user_id: {"balance": 0, "last_daily": 0}}
 discord_tickets = {}      # {channel_id: user_id}
 discord_daily_replies = {} # {user_id: last_reply_date_string}
+discord_sleeping_users = {} # {user_id: sleep_expiry_timestamp} - users who put bot to sleep for themselves
 last_youtube_video_id = None
 last_facebook_post_id = None
 
 # Discord AI Bot Configuration
 discord_conversations = {}  # {user_id: [{"role": "user/assistant", "content": "..."}]}
 discord_cooldowns = {}  # {user_id: last_reply_timestamp}
+discord_spam_tracker = {} # {user_id: [timestamps]}
+discord_restricted_users = {} # {user_id: expiry_timestamp}
+discord_tts_enabled = {} # {user_id: bool}
 discord_auto_reply_enabled = True
 discord_personality_mode = "friendly"  # friendly, funny, serious, gamer
 
 DISCORD_PERSONALITIES = {
-    "friendly": "You are a friendly, warm, and approachable person. Respond casually like a good friend chatting. Use emojis naturally. Keep replies short (1-2 sentences).",
-    "funny": "You are hilarious and witty. Make jokes, use puns, and be playful. Keep it light and entertaining. Use emojis. Keep replies short and funny.",
-    "serious": "You are professional and thoughtful. Give well-reasoned, intelligent responses. Be concise and direct. No emojis. Keep replies brief.",
-    "gamer": "You are a gamer who loves video games and gaming culture. Use gaming slang, 'gg', 'wp', 'noob', 'pog', etc. Be enthusiastic. Keep replies short."
+    "friendly": "You are SURJO LIVE Assistant, a friendly and helpful Discord bot assistant for the SURJO LIVE community. Be warm, welcoming, and conversational. Use emojis occasionally. Keep responses concise but informative. You're here to help SURJO LIVE members.",
+    "funny": "You are SURJO LIVE Assistant, a humorous Discord bot for the SURJO LIVE community with a great sense of humor. Make appropriate jokes, use witty remarks, and keep the mood light. Be entertaining but still helpful.",
+    "serious": "You are SURJO LIVE Assistant, a professional and serious Discord bot for the SURJO LIVE community. Give direct, factual answers without fluff. Be efficient and business-like in your responses.",
+    "gamer": "You are SURJO LIVE Assistant, a Discord bot for the SURJO LIVE community who loves gaming. Use gaming terminology, references to popular games, and an energetic tone. Be enthusiastic about gaming topics."
 }
 
 # Custom FAQ Responses for common greetings and emojis
 DISCORD_FAQ = {
     "hi": "Hello there! How can I help you today? 😊",
-    "hello": "Hi! Einstein System at your service. 👨‍🔬",
-    "hey": "Hey! Need some science facts or just want to chat? 🧪",
+    "hello": "Hi! SURJO LIVE Assistant at your service! 🤖",
+    "hey": "Hey! Need some help or just want to chat? 🧪",
     "how are you": "I'm functioning at 100% capacity! How about you? ⚙️",
-    "what is your name": "I am the Einstein System, your AI assistant. 🤖",
+    "what is your name": "I am SURJO LIVE Assistant, your Discord helper! 🤖",
     "bye": "Goodbye! Have a great day! 👋",
     "good morning": "Good morning! Ready for some discoveries today? ☀️",
     "good night": "Good night! System entering low-power mode... 😴",
@@ -10477,8 +10481,8 @@ DISCORD_FAQ = {
     "👍": "Awesome! I'm here if you need anything else. ✅",
     "🔥": "That's fire! You're doing great! ⚡",
     "🤖": "Beep boop! Fellow robot detected. 🦾",
-    "🍎": "An apple a day keeps the doctor away... but I prefer a physics book! 📚",
-    "🚀": "To infinity and beyond! Ready for a space fact? 🌌",
+    "🍎": "An apple a day keeps the doctor away! 🍏",
+    "🚀": "To infinity and beyond! Ready for some fun? 🌌",
     "💎": "Shine bright like a diamond! You're valuable. 🌟",
     "🎉": "Congratulations! Let's celebrate! 🎈"
 }
@@ -10736,7 +10740,7 @@ async def start_discord_bot():
         for guild in discord_client.guilds:
             for channel in guild.text_channels:
                 try:
-                    await channel.send("👨‍🔬 **Einstein System Initialized.** System is now monitoring this sector for transmissions.")
+                    await channel.send("🤖 **SURJO LIVE Assistant Initialized.** I'm here to help the SURJO LIVE community! Type `!bothelp` for commands.")
                     print(f"DEBUG: Sent startup message to {channel.name} in {guild.name}")
                     break # Just one channel per guild
                 except:
@@ -10882,14 +10886,6 @@ async def start_discord_bot():
         except Exception as e:
             await ctx.send(f"❌ Error: {str(e)}")
 
-    @discord_client.command(name="time")
-    async def discord_time(ctx):
-        """Show current time"""
-        from datetime import datetime
-        now = datetime.now()
-        time_text = f"🕐 **Current Time:** `{now.strftime('%Y-%m-%d %H:%M:%S')}`"
-        await ctx.send(time_text)
-
     @discord_client.command(name="fact")
     async def discord_fact(ctx):
         """Get a random science fact"""
@@ -11027,11 +11023,62 @@ async def start_discord_bot():
         for guild in discord_client.guilds:
             for channel in guild.text_channels:
                 try:
-                    await channel.send("👨‍🔬 **Einstein System Initialized.** System is now monitoring this sector for transmissions.")
+                    await channel.send("🤖 **SURJO LIVE Assistant Initialized.** I'm here to help the SURJO LIVE community! Type `!bothelp` for commands.")
                     print(f"DEBUG: Sent startup message to {channel.name} in {guild.name}")
                     break # Just one channel per guild
                 except:
                     continue
+
+    @discord_client.command(name="sleep")
+    async def discord_sleep_command(ctx):
+        """Put the bot to sleep for yourself - bot won't auto-reply until !wakeup"""
+        user_id_str = str(ctx.author.id)
+        discord_sleeping_users[user_id_str] = True # Permanent until !wakeup
+        await ctx.send(f"😴 **{ctx.author.mention}, I'm going to sleep for you!**\n\n🌙 I will not auto-reply to your messages until you type `!wakeup`.\n\n💡 Other users can still interact with me normally.")
+
+    @discord_client.command(name="time")
+    async def discord_time_command(ctx):
+        """Show real-time with animation and premium look"""
+        from datetime import datetime
+        import asyncio
+        
+        # Premium Embed
+        embed = discord.Embed(
+            title="🕒 Real-Time Clock",
+            description="🔄 *Initializing time synchronization...*",
+            color=discord.Color.blue()
+        )
+        msg = await ctx.send(embed=embed)
+        
+        # Animation steps
+        for i in range(3):
+            await asyncio.sleep(0.5)
+            now = datetime.now()
+            current_time = now.strftime("%H:%M:%S")
+            current_date = now.strftime("%A, %B %d, %Y")
+            
+            embed.description = f"📡 **Server Time Synchronized**\n\n📅 **Date:** `{current_date}`\n⏰ **Time:** **`{current_time}`**\n\n✨ *Live updates enabled*"
+            embed.set_footer(text=f"SURJO LIVE Assistant • Premium Look", icon_url=discord_client.user.avatar.url if discord_client.user.avatar else None)
+            await msg.edit(embed=embed)
+
+    @discord_client.command(name="wakeup")
+    async def discord_wakeup_command(ctx):
+        """Wake up the bot for yourself"""
+        user_id_str = str(ctx.author.id)
+        if user_id_str in discord_sleeping_users:
+            del discord_sleeping_users[user_id_str]
+            await ctx.send(f"☀️ **{ctx.author.mention}, I'm awake now!** Ready to assist you again! 🤖")
+        else:
+            await ctx.send(f"ℹ️ **{ctx.author.mention}**, I was already awake for you!")
+
+    @discord_client.command(name="tts")
+    async def discord_toggle_tts(ctx):
+        """Toggle AI Voice (TTS) for yourself"""
+        user_id_str = str(ctx.author.id)
+        current = discord_tts_enabled.get(user_id_str, False)
+        discord_tts_enabled[user_id_str] = not current
+        status = "ENABLED 🔊" if not current else "DISABLED 🔇"
+        await ctx.send(f"🎙️ **AI Voice {status}** for {ctx.author.mention}. I will now send voice replies to your questions!")
 
     @discord_client.event
     async def on_message(message):
@@ -11043,9 +11090,41 @@ async def start_discord_bot():
         if message.author.bot or message.author == discord_client.user:
             return
 
+        # --- ANTI-SPAM SYSTEM ---
+        import time
+        now = time.time()
+        
+        # Check if user is currently restricted
+        if user_id_str in discord_restricted_users:
+            expiry = discord_restricted_users[user_id_str]
+            if now < expiry:
+                return # Silently ignore
+            else:
+                del discord_restricted_users[user_id_str]
+
+        # Track message for spam (Limit: 5 messages in 10 seconds)
+        if user_id_str not in discord_spam_tracker:
+            discord_spam_tracker[user_id_str] = []
+        
+        discord_spam_tracker[user_id_str].append(now)
+        # Keep only last 10 timestamps
+        discord_spam_tracker[user_id_str] = [t for t in discord_spam_tracker[user_id_str] if now - t < 10]
+        
+        if len(discord_spam_tracker[user_id_str]) > 5:
+            # Restrict user for 5 minutes
+            discord_restricted_users[user_id_str] = now + (5 * 60)
+            await message.channel.send(f"🚫 {message.author.mention}, you are sending messages too fast! You are restricted from using me for **5 minutes**. ⏳", delete_after=10)
+            return
+
         # Process commands
         ctx = await discord_client.get_context(message)
         if ctx.valid:
+            # Special case: manual wakeup check if command handling fails
+            if content.lower().startswith("!wakeup"):
+                if user_id_str in discord_sleeping_users:
+                    del discord_sleeping_users[user_id_str]
+                    await message.channel.send(f"☀️ **{message.author.mention}, I'm awake now!** Ready to assist you again! 🤖")
+                    return
             try:
                 await discord_client.invoke(ctx)
                 return
@@ -11053,21 +11132,35 @@ async def start_discord_bot():
                 print(f"DEBUG: Command error: {cmd_err}")
                 return
 
-        # Check for FAQ
-        lower_content = content.lower()
-        if lower_content in DISCORD_FAQ:
-            from datetime import datetime
-            today_str = datetime.now().strftime("%Y-%m-%d")
-            if discord_daily_replies.get(user_id_str) == today_str:
+        # Manual wakeup check for non-prefix situations or if sleep is aggressive
+        if content.lower() == "!wakeup":
+            if user_id_str in discord_sleeping_users:
+                del discord_sleeping_users[user_id_str]
+                await message.channel.send(f"☀️ **{message.author.mention}, I'm awake now!** Ready to assist you again! 🤖")
                 return
 
+        # Check if user has put bot to sleep for them
+        is_sleeping = user_id_str in discord_sleeping_users
+
+        # Check for FAQ (Skip if sleeping)
+        lower_content = content.lower()
+        if lower_content in DISCORD_FAQ and not is_sleeping:
             reply = DISCORD_FAQ[lower_content]
-            await message.reply(f"{message.author.mention} {reply}")
+            
+            # Premium FAQ Embed
+            embed = discord.Embed(
+                description=f"💬 **{reply}**",
+                color=discord.Color.green()
+            )
+            embed.set_author(name="SURJO LIVE Assistant", icon_url=discord_client.user.avatar.url if discord_client.user.avatar else None)
+            
+            await message.reply(embed=embed)
             update_discord_cooldown(user_id)
-            discord_daily_replies[user_id_str] = today_str
+            # Send second message about !sleep command
+            await message.channel.send(f"💤 **{message.author.mention}**, if you want me to sleep for you, type `!sleep`. Type `!wakeup` to wake me up! 🌙", delete_after=10)
             return
 
-        # Leveling & Auto-mod
+        # Leveling & Auto-mod (Always runs)
         if user_id_str not in discord_levels:
             discord_levels[user_id_str] = {"xp": 0, "level": 1}
         discord_levels[user_id_str]["xp"] += 5
@@ -11084,13 +11177,8 @@ async def start_discord_bot():
                 return
             except: pass
 
-        # AI Response
-        if not discord_auto_reply_enabled or content.startswith("!"):
-            return
-
-        from datetime import datetime
-        today_str = datetime.now().strftime("%Y-%m-%d")
-        if discord_daily_replies.get(user_id_str) == today_str:
+        # AI Response (Skip if sleeping or commands)
+        if not discord_auto_reply_enabled or content.startswith("!") or is_sleeping:
             return
 
         if not is_discord_cooldown_passed(user_id):
@@ -11104,9 +11192,35 @@ async def start_discord_bot():
                     personality_prompt, os.getenv("OLLAMA_MODEL", "llama3.2")
                 )
                 if ai_reply:
-                    await message.reply(f"{message.author.mention} {ai_reply}")
+                    # Premium AI Embed
+                    embed = discord.Embed(
+                        description=f"🤖 **{ai_reply}**",
+                        color=discord.Color.purple()
+                    )
+                    embed.set_author(name="SURJO LIVE Assistant", icon_url=discord_client.user.avatar.url if discord_client.user.avatar else None)
+                    embed.set_footer(text="✨ AI Thinking Mode Enabled")
+                    
+                    await message.reply(embed=embed)
+                    
+                    # AI Voice (TTS) Logic
+                    if discord_tts_enabled.get(user_id_str, False):
+                        try:
+                            tts = gTTS(text=ai_reply, lang='bn' if any('\u0980' <= char <= '\u09FF' for char in ai_reply) else 'en')
+                            filename = f"tts_{uuid.uuid4().hex}.mp3"
+                            filepath = os.path.join(os.getcwd(), "temp_tts", filename)
+                            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+                            tts.save(filepath)
+                            await message.channel.send(file=discord.File(filepath))
+                            # Cleanup
+                            await asyncio.sleep(5)
+                            if os.path.exists(filepath):
+                                os.remove(filepath)
+                        except Exception as tts_err:
+                            print(f"DEBUG: TTS Error: {tts_err}")
+
                     update_discord_cooldown(user_id)
-                    discord_daily_replies[user_id_str] = today_str
+                    # Send second message about !sleep command
+                    await message.channel.send(f"💤 **{message.author.mention}**, if you want me to sleep for you, type `!sleep`. Type `!wakeup` to wake me up! 🌙", delete_after=10)
         except Exception as e:
             print(f"DEBUG: AI Error: {e}")
 
