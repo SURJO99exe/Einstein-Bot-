@@ -10690,6 +10690,30 @@ async def start_discord_bot():
         await channel.send(f"🎫 **Ticket Opened!** {ctx.author.mention}, please describe your issue. Type `!close` to end this ticket.")
         await ctx.send(f"✅ Ticket created: {channel.mention}")
 
+        # Notify online admins and moderators
+        admin_roles = ["Admin", "Moderator", "Mod", "Owner"] # Common role names
+        notification_sent = False
+        
+        for member in guild.members:
+            if member.bot: continue
+            
+            # Check if member has any admin/mod role and is online
+            has_role = any(role.name in admin_roles for role in member.roles)
+            is_online = member.status != discord.Status.offline
+            
+            if has_role and is_online:
+                try:
+                    await member.send(f"🔔 **New Support Ticket!**\nUser: {ctx.author.name}\nChannel: {channel.mention}\nServer: {guild.name}")
+                    notification_sent = True
+                except:
+                    pass # DMs might be closed
+        
+        if not notification_sent:
+            # Fallback: Tag in the ticket channel if no one was notified via DM
+            roles_to_ping = " ".join([role.mention for role in guild.roles if role.name in admin_roles])
+            if roles_to_ping:
+                await channel.send(f"⚠️ {roles_to_ping} No online staff found for DM notification. Please assist here.")
+
     @discord_client.command(name="close")
     async def discord_close(ctx):
         """Close a ticket"""
