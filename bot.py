@@ -26,6 +26,7 @@ from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKe
 from telegram.constants import ChatAction
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 from flask import Flask, render_template_string, request, jsonify
+import ai
 
 # Fix SSL certificate issues on Windows
 os.environ['SSL_CERT_FILE'] = certifi.where()
@@ -10482,172 +10483,7 @@ DISCORD_FAQ = {
     "🎉": "Congratulations! Let's celebrate! 🎈"
 }
 
-def analyze_and_reply_mini_ai(question):
-    """Mini AI logic to analyze and reply to user questions locally"""
-    q = question.lower()
-    
-    # 1. Keywords mapping for common questions
-    mini_ai_knowledge = {
-        "who are you": "I am Einstein System, a mini-AI developed to assist you with tasks, moderation, and chat!",
-        "what can you do": "I can moderate servers, track XP, manage economy, notify social media updates, and talk to you!",
-        "help": "You can type `!bothelp` to see a full list of my commands!",
-        "creator": "I was created to be a powerful assistant for the SURJO LIVE server.",
-        "owner": "My owner is the administrator of this server. You can find them in the member list!",
-        "weather": "I can check the weather if you use my Telegram version or wait for my next Discord update!",
-        "time": "You can use `!time` to see the current time and date.",
-        "joke": "Try `!joke` for a scientific laugh!",
-        "fact": "Type `!fact` to learn something new about science!",
-        "ping": "Use `!ping` to check my response speed.",
-        "version": "I am currently running on Einstein-Bot Version 3.5.0.",
-        "status": "Check `!status` to see my system health and resource usage."
-    }
-
-    # 2. Pattern matching
-    for key, response in mini_ai_knowledge.items():
-        if key in q:
-            return response
-
-    # 3. Simple Math Analysis
-    import re
-    math_pattern = re.search(r"(\d+)\s*([\+\-\*\/])\s*(\d+)", q)
-    if math_pattern:
-        try:
-            num1 = int(math_pattern.group(1))
-            op = math_pattern.group(2)
-            num2 = int(math_pattern.group(3))
-            if op == '+': res = num1 + num2
-            elif op == '-': res = num1 - num2
-            elif op == '*': res = num1 * num2
-            elif op == '/': res = num1 / num2 if num2 != 0 else "undefined"
-            return f"I analyzed your math question: {num1} {op} {num2} = {res}"
-        except:
-            pass
-
-    # 4. Fallback for unknown questions
-    if "?" in q:
-        return "That's an interesting question! I don't have a specific local answer for that yet, but I'm learning every day. Try asking something about my features!"
-        
-    return None
-
-async def get_ai_response_discord(user_id, message_content, max_tokens=80):
-    """Get AI response for Discord with conversation memory"""
-    # Try Mini AI first for instant local analysis
-    mini_response = analyze_and_reply_mini_ai(message_content)
-    if mini_response:
-        return mini_response
-
-    try:
-        # Initialize conversation history for new users
-        if user_id not in discord_conversations:
-            discord_conversations[user_id] = []
-        
-        # Add user message to history
-        discord_conversations[user_id].append({"role": "user", "content": message_content})
-        
-        # Keep only last 5 messages for context (to save tokens)
-        if len(discord_conversations[user_id]) > 5:
-            discord_conversations[user_id] = discord_conversations[user_id][-5:]
-        
-        # Get personality prompt
-        personality_prompt = DISCORD_PERSONALITIES.get(discord_personality_mode, DISCORD_PERSONALITIES["friendly"])
-        
-        # Build conversation context
-        messages = [
-            {"role": "system", "content": f"{personality_prompt} Respond naturally like a human. Be conversational, not robotic. Never mention you're an AI."}
-        ]
-        messages.extend(discord_conversations[user_id])
-        
-        # Try OpenAI first if API key is available
-        openai_key = os.getenv("OPENAI_API_KEY")
-        if openai_key and openai_key != "your_openai_key_here":
-            headers = {
-                "Authorization": f"Bearer {openai_key}",
-                "Content-Type": "application/json"
-            }
-            data = {
-                "model": "gpt-3.5-turbo",
-                "messages": messages,
-                "max_tokens": max_tokens,
-                "temperature": 0.8
-            }
-            resp = requests.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers=headers,
-                json=data,
-                timeout=10
-            )
-            if resp.status_code == 200:
-                reply = resp.json()["choices"][0]["message"]["content"].strip()
-                # Add assistant response to history
-                discord_conversations[user_id].append({"role": "assistant", "content": reply})
-                return reply
-        
-        # Fallback to Pollinations AI if Ollama/OpenAI fails
-        if not openai_key or openai_key == "your_openai_key_here":
-            try:
-                # Use Pollinations AI (free, no key required)
-                personality_prompt = DISCORD_PERSONALITIES.get(discord_personality_mode, DISCORD_PERSONALITIES["friendly"])
-                system_msg = f"{personality_prompt} Respond naturally like a human. Be conversational, not robotic. Never mention you're an AI."
-                
-                # Build context for URL
-                prompt_context = " ".join([m['content'] for m in discord_conversations[user_id][-3:]])
-                encoded_prompt = requests.utils.quote(f"System: {system_msg}\nConversation: {prompt_context}")
-                
-                pollinations_url = f"https://text.pollinations.ai/{encoded_prompt}"
-                resp = requests.get(pollinations_url, timeout=10)
-                
-                if resp.status_code == 200:
-                    reply = resp.text.strip()
-                    if reply:
-                        discord_conversations[user_id].append({"role": "assistant", "content": reply})
-                        return reply
-            except Exception as p_err:
-                print(f"DEBUG: Pollinations fallback error: {p_err}")
-
-        # Fallback to Ollama (free local AI) if configured
-        try:
-            ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2")
-            
-            # Build prompt for Ollama
-            context_text = "\n".join([f"{'User' if m['role'] == 'user' else 'You'}: {m['content']}" for m in discord_conversations[user_id][:-1]])
-            current_message = discord_conversations[user_id][-1]["content"]
-            
-            ollama_prompt = f"""{personality_prompt}
-
-Previous conversation:
-{context_text}
-
-User just said: {current_message}
-
-Reply naturally as a human friend (1-2 short sentences max):"""
-            
-            resp = requests.post(
-                "http://localhost:11434/api/generate",
-                json={
-                    "model": ollama_model,
-                    "prompt": ollama_prompt,
-                    "stream": False,
-                    "options": {"num_predict": max_tokens}
-                },
-                timeout=10
-            )
-            if resp.status_code == 200:
-                reply = resp.json().get('response', '').strip()
-                # Clean up the response
-                reply = reply.replace("User:", "").replace("You:", "").strip()
-                if reply:
-                    # Add assistant response to history
-                    discord_conversations[user_id].append({"role": "assistant", "content": reply})
-                    return reply
-        except Exception as o_err:
-            print(f"DEBUG: Ollama fallback error: {o_err}")
-        
-        return "I'm here! How can I help you today? 😊" # Final hardcoded fallback
-
-    except Exception as e:
-        print(f"DEBUG: AI Discord response error: {e}")
-        return None
-
+# --- DISCORD BOT RECEPTION LOGIC (AI & COMMANDS) ---
 def is_discord_cooldown_passed(user_id):
     """Check if cooldown period has passed (5-10 seconds random)"""
     import random
@@ -11176,127 +11012,82 @@ async def start_discord_bot():
     @discord_client.event
     async def on_message(message):
         user_id = message.author.id
+        user_id_str = str(user_id)
         content = message.content.strip()
-        print(f"DEBUG: Message received from {message.author}: '{content}'")
-        add_to_logs(f"Discord DEBUG: Message from {message.author}")
         
-        # Ignore bot messages (including self)
-        if message.author.bot:
-            print(f"DEBUG: Ignoring bot message from {message.author}")
-            return
-        
-        if message.author == discord_client.user:
+        # Ignore bot messages
+        if message.author.bot or message.author == discord_client.user:
             return
 
-        # Process commands first (like !help, !on, !off)
+        # Process commands
         ctx = await discord_client.get_context(message)
         if ctx.valid:
-            print(f"DEBUG: Valid command detected: {content}")
             try:
                 await discord_client.invoke(ctx)
-                print(f"DEBUG: Command '{content}' executed successfully")
                 return
             except Exception as cmd_err:
-                print(f"DEBUG: Command error for '{content}': {cmd_err}")
-                add_to_logs(f"Discord Command Error: {cmd_err}")
-                await message.channel.send(f"❌ Command error: {str(cmd_err)}")
+                print(f"DEBUG: Command error: {cmd_err}")
                 return
-        else:
-            if content.startswith("!"):
-                print(f"DEBUG: Invalid command or prefix mismatch: {content}")
-        
-        # Check for custom FAQ/Greetings first
+
+        # Check for FAQ
         lower_content = content.lower()
         if lower_content in DISCORD_FAQ:
-            # --- ONCE PER DAY REPLY LOGIC FOR FAQ ---
             from datetime import datetime
             today_str = datetime.now().strftime("%Y-%m-%d")
             if discord_daily_replies.get(user_id_str) == today_str:
-                print(f"DEBUG: User {user_id_str} already received their daily AI/FAQ reply (FAQ triggered).")
                 return
 
             reply = DISCORD_FAQ[lower_content]
-            print(f"DEBUG: FAQ response found for '{lower_content}': {reply}")
-            mention = message.author.mention
-            await message.reply(f"{mention} {reply}")
+            await message.reply(f"{message.author.mention} {reply}")
             update_discord_cooldown(user_id)
-            discord_daily_replies[user_id_str] = today_str # Mark as replied today
+            discord_daily_replies[user_id_str] = today_str
             return
 
-        # If not a command or FAQ, log for AI
-        print(f"DEBUG: Processing as regular message for AI: {content}")
-        
-        # --- LEVELING SYSTEM (XP on every message) ---
-        user_id_str = str(user_id)
+        # Leveling & Auto-mod
         if user_id_str not in discord_levels:
             discord_levels[user_id_str] = {"xp": 0, "level": 1}
-        
         discord_levels[user_id_str]["xp"] += 5
-        level_up_xp = discord_levels[user_id_str]["level"] * 100
-        
-        if discord_levels[user_id_str]["xp"] >= level_up_xp:
+        if discord_levels[user_id_str]["xp"] >= (discord_levels[user_id_str]["level"] * 100):
             discord_levels[user_id_str]["level"] += 1
             discord_levels[user_id_str]["xp"] = 0
-            try:
-                await message.channel.send(f"🎊 {message.author.mention} leveled up to **Level {discord_levels[user_id_str]['level']}**! Keep it up! 🚀")
-            except:
-                pass
+            try: await message.channel.send(f"🎊 {message.author.mention} leveled up to **Level {discord_levels[user_id_str]['level']}**!")
+            except: pass
 
-        # --- AUTO-MODERATION (Simple Word Filter) ---
-        bad_words = ["spam", "hack", "scam"] # Example words
-        if any(word in lower_content for word in bad_words):
+        if any(word in lower_content for word in ["spam", "hack", "scam"]):
             try:
                 await message.delete()
-                await message.channel.send(f"⚠️ {message.author.mention}, your message contained restricted content and was removed.", delete_after=5)
+                await message.channel.send(f"⚠️ {message.author.mention}, restricted content removed.", delete_after=5)
                 return
-            except:
-                pass
+            except: pass
 
-        channel_info = f"DM with {message.author}" if isinstance(message.channel, discord.DMChannel) else f"channel {message.channel} in {message.guild}"
-        add_to_logs(f"Discord Event: Message from {message.author} in {channel_info}")
-        
-        # Check if auto-reply is enabled
-        if not discord_auto_reply_enabled:
-            print("DEBUG: Auto-reply is disabled")
+        # AI Response
+        if not discord_auto_reply_enabled or content.startswith("!"):
             return
-        
-        # --- ONCE PER DAY REPLY LOGIC ---
+
         from datetime import datetime
         today_str = datetime.now().strftime("%Y-%m-%d")
         if discord_daily_replies.get(user_id_str) == today_str:
-            print(f"DEBUG: User {user_id_str} already received their daily AI/FAQ reply.")
             return
 
-        # Don't reply to commands that weren't recognized
-        if content.startswith("!"):
-            return
-        
-        # Cooldown check
         if not is_discord_cooldown_passed(user_id):
-            print(f"DEBUG: Cooldown active for user {user_id}")
             return
 
-        # AI Response
         try:
             async with message.channel.typing():
-                ai_reply = await get_ai_response_discord(user_id, content)
+                personality_prompt = DISCORD_PERSONALITIES.get(discord_personality_mode, DISCORD_PERSONALITIES["friendly"])
+                ai_reply = await ai.get_ai_response_discord(
+                    user_id, content, discord_conversations, 
+                    personality_prompt, os.getenv("OLLAMA_MODEL", "llama3.2")
+                )
                 if ai_reply:
-                    mention = message.author.mention
-                    await message.reply(f"{mention} {ai_reply}")
+                    await message.reply(f"{message.author.mention} {ai_reply}")
                     update_discord_cooldown(user_id)
-                    discord_daily_replies[user_id_str] = today_str # Mark as replied today
-                    print(f"DEBUG: AI reply sent to {message.author}: {ai_reply[:50]}...")
-                else:
-                    print("DEBUG: No AI reply generated")
-        except Exception as msg_err:
-            print(f"DEBUG: Error in Discord auto-reply: {msg_err}")
-            add_to_logs(f"Discord AI Reply Error: {msg_err}")
+                    discord_daily_replies[user_id_str] = today_str
+        except Exception as e:
+            print(f"DEBUG: AI Error: {e}")
 
     try:
         await discord_client.start(DISCORD_BOT_TOKEN)
-    except asyncio.CancelledError:
-        print("DEBUG: Discord bot connection cancelled")
-        add_to_logs("Discord Bot: Connection cancelled gracefully")
     except Exception as e:
         print(f"DEBUG: Discord bot startup error: {e}")
         add_to_logs(f"Discord Bot Error: {e}")
