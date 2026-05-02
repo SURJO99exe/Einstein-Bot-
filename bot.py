@@ -11098,7 +11098,7 @@ async def start_discord_bot():
         if user_id_str in discord_restricted_users:
             expiry = discord_restricted_users[user_id_str]
             if now < expiry:
-                return # Silently ignore
+                return # STRICT BLOCK: Do not process anything if restricted
             else:
                 del discord_restricted_users[user_id_str]
 
