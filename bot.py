@@ -10443,6 +10443,7 @@ discord_warns = {}        # {user_id: [{"reason": "...", "author": "...", "time"
 discord_levels = {}       # {user_id: {"xp": 0, "level": 1}}
 discord_economy = {}      # {user_id: {"balance": 0, "last_daily": 0}}
 discord_tickets = {}      # {channel_id: user_id}
+discord_daily_replies = {} # {user_id: last_reply_date_string}
 
 # Discord AI Bot Configuration
 discord_conversations = {}  # {user_id: [{"role": "user/assistant", "content": "..."}]}
@@ -11089,11 +11090,19 @@ async def start_discord_bot():
         # Check for custom FAQ/Greetings first
         lower_content = content.lower()
         if lower_content in DISCORD_FAQ:
+            # --- ONCE PER DAY REPLY LOGIC FOR FAQ ---
+            from datetime import datetime
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            if discord_daily_replies.get(user_id_str) == today_str:
+                print(f"DEBUG: User {user_id_str} already received their daily AI/FAQ reply (FAQ triggered).")
+                return
+
             reply = DISCORD_FAQ[lower_content]
             print(f"DEBUG: FAQ response found for '{lower_content}': {reply}")
             mention = message.author.mention
             await message.reply(f"{mention} {reply}")
             update_discord_cooldown(user_id)
+            discord_daily_replies[user_id_str] = today_str # Mark as replied today
             return
 
         # If not a command or FAQ, log for AI
@@ -11133,6 +11142,13 @@ async def start_discord_bot():
             print("DEBUG: Auto-reply is disabled")
             return
         
+        # --- ONCE PER DAY REPLY LOGIC ---
+        from datetime import datetime
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        if discord_daily_replies.get(user_id_str) == today_str:
+            print(f"DEBUG: User {user_id_str} already received their daily AI/FAQ reply.")
+            return
+
         # Don't reply to commands that weren't recognized
         if content.startswith("!"):
             return
@@ -11150,6 +11166,7 @@ async def start_discord_bot():
                     mention = message.author.mention
                     await message.reply(f"{mention} {ai_reply}")
                     update_discord_cooldown(user_id)
+                    discord_daily_replies[user_id_str] = today_str # Mark as replied today
                     print(f"DEBUG: AI reply sent to {message.author}: {ai_reply[:50]}...")
                 else:
                     print("DEBUG: No AI reply generated")
