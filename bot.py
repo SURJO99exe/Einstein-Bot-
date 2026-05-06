@@ -6581,43 +6581,100 @@ def split_file(file_path, chunk_size_mb=1900):
             
     return chunks
 
-async def send_large_file(update, context, file_path, caption):
+async def upload_progress(current, total, status_msg, file_name, start_time, last_update):
+    """Callback for Telegram upload progress with speed and ETA"""
+    now = time.time()
+    if now - last_update[0] < 2:  # Update every 2 seconds
+        return
+    
+    last_update[0] = now
+    percentage = (current / total) * 100
+    elapsed = now - start_time
+    speed = current / elapsed if elapsed > 0 else 0
+    eta = (total - current) / speed if speed > 0 else 0
+    
+    # Generate progress bar
+    length = 15
+    filled = int(length * percentage / 100)
+    bar = '█' * filled + '░' * (length - filled)
+    
+    def format_bytes(b):
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if b < 1024: return f"{b:.2f} {unit}"
+            b /= 1024
+        return f"{b:.2f} TB"
+
+    def format_time(s):
+        if s < 60: return f"{int(s)}s"
+        return f"{int(s//60)}m {int(s%60)}s"
+
+    progress_text = (
+        f"📤 <b>Uploading to Telegram...</b>\n\n"
+        f"<code>[{bar}] {percentage:.1f}%</code>\n\n"
+        f"📁 <b>File:</b> <code>{file_name}</code>\n"
+        f"📊 <b>Uploaded:</b> <code>{format_bytes(current)}</code> / <code>{format_bytes(total)}</code>\n"
+        f"⚡ <b>Speed:</b> <code>{format_bytes(speed)}/s</code>\n"
+        f"⏱️ <b>Time Elapsed:</b> <code>{format_time(elapsed)}</code>\n"
+        f"🕐 <b>Time Remaining:</b> <code>{format_time(eta)}</code>\n\n"
+        f"<i>Please wait while Einstein uploads your content...</i>"
+    )
+    
+    try:
+        await status_msg.edit_text(progress_text, parse_mode='HTML')
+    except:
+        pass
+
+async def send_large_file(update, context, file_path, caption=None):
     """Sends a file, splitting it if it exceeds Telegram's size limit"""
     MAX_SIZE_MB = 1900 # Stay safe under 2GB limit
     file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
     
     if file_size_mb <= MAX_SIZE_MB:
         with open(file_path, 'rb') as f:
-            try:
-                if file_path.lower().endswith(('.mp4', '.mkv', '.webm', '.mov', '.avi')):
-                    await update.message.reply_video(
-                        video=f, 
+            # Handle files < 2GB with progress
+            start_time = time.time()
+            last_update = [0]
+            file_name = os.path.basename(file_path)
+            
+            async def progress_callback(current, total):
+                await upload_progress(current, total, status_msg, file_name, start_time, last_update)
+
+            if file_size_mb > 50:  # Only show progress for files > 50MB
+                status_msg = await update.message.reply_text(f"📤 Preparing to upload <code>{file_name}</code>...", parse_mode='HTML')
+                
+                if file_path.lower().endswith(('.mp4', '.mkv', '.avi', '.mov')):
+                    await context.bot.send_video(
+                        chat_id=update.effective_chat.id,
+                        video=open(file_path, 'rb'),
                         caption=caption,
-                        supports_streaming=True, 
-                        read_timeout=1200, 
-                        write_timeout=1200,
-                        parse_mode='HTML'
+                        parse_mode='HTML',
+                        write_timeout=600,
+                        read_timeout=600,
+                        connect_timeout=600,
+                        pool_timeout=600,
+                        progress_callback=progress_callback
                     )
                 else:
-                    await update.message.reply_document(
-                        document=f, 
+                    await context.bot.send_document(
+                        chat_id=update.effective_chat.id,
+                        document=open(file_path, 'rb'),
                         caption=caption,
-                        read_timeout=1200, 
-                        write_timeout=1200,
-                        parse_mode='HTML'
+                        parse_mode='HTML',
+                        write_timeout=600,
+                        read_timeout=600,
+                        connect_timeout=600,
+                        pool_timeout=600,
+                        progress_callback=progress_callback
                     )
-                return True
-            except Exception as e:
-                print(f"Error sending file normally: {e}")
-                f.seek(0)
-                await update.message.reply_document(
-                    document=f, 
-                    caption=caption,
-                    read_timeout=1200, 
-                    write_timeout=1200,
-                    parse_mode='HTML'
-                )
-                return True
+                await status_msg.delete()
+            else:
+                # Small files - direct send
+                if file_path.lower().endswith(('.mp4', '.mkv', '.avi', '.mov')):
+                    await context.bot.send_video(chat_id=update.effective_chat.id, video=open(file_path, 'rb'), caption=caption, parse_mode='HTML')
+                else:
+                    await context.bot.send_document(chat_id=update.effective_chat.id, document=open(file_path, 'rb'), caption=caption, parse_mode='HTML')
+        
+        return True
     else:
         # File is too large, need to split
         await update.message.reply_text(f"📦 <b>File is large ({file_size_mb/1024:.2f} GB).</b>\nEinstein is splitting it into parts for you...", parse_mode='HTML')
