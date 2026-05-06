@@ -9226,6 +9226,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username = update.effective_user.username or "Unknown"
     text = update.message.text
     
+    # Enable background task processing for all messages
+    asyncio.create_task(process_message_background(update, context, text, user_id, username))
+
+async def process_message_background(update: Update, context: ContextTypes.DEFAULT_TYPE, text: str, user_id: str, username: str):
+    global reminders_list
     # Auto-detect language if not set
     if user_id not in user_languages:
         detected_lang = detect_language(text)
@@ -9657,37 +9662,36 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except: await update.message.reply_text("❌ Error setting reminder.")
     elif text.startswith('!iplookup '):
         try:
-            ip = text.split()[1]
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(f"http://ip-api.com/json/{ip}")
-                if resp.status_code == 200:
-                    d = resp.json()
-                    if d.get('status') == 'success':
-                        await update.message.reply_text(f"🌐 **IP Result:** `{ip}`\n📍 **Location:** {d.get('city')}, {d.get('country')}\n📡 **ISP:** {d.get('isp')}")
-                    else: await update.message.reply_text("❌ Invalid IP.")
-        except: await update.message.reply_text("❌ Error looking up IP.")
+            parts = text.split()
+            if len(parts) < 2:
+                await update.message.reply_text("❌ Usage: `!iplookup [IP_ADDRESS]`")
+            else:
+                ip = parts[1]
+                async with httpx.AsyncClient() as client:
+                    resp = await client.get(f"http://ip-api.com/json/{ip}")
+                    if resp.status_code == 200:
+                        d = resp.json()
+                        if d.get('status') == 'success':
+                            await update.message.reply_text(f"🌐 **IP Result:** `{ip}`\n📍 **Location:** {d.get('city')}, {d.get('country')}\n📡 **ISP:** {d.get('isp')}")
+                        else:
+                            await update.message.reply_text("❌ Invalid IP.")
+                    else:
+                        await update.message.reply_text("❌ IP service unavailable.")
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error looking up IP: {str(e)}")
     elif text.startswith('!translate '):
         parts = text.split(' ', 2)
-        if len(parts) < 3:
-            await update.message.reply_text("❌ Usage: `!translate [lang_code] [text]`\nExample: `!translate bn Hello`")
-        else:
-            # Reusing existing logic or providing a quick one if needed
-            # For Telegram, we can use the existing translate_reply or a new simple logic
-            await update.message.reply_text("🌐 **Translating...**")
-            try:
-                target_lang = parts[1]
-                content = parts[2]
-                async with httpx.AsyncClient() as client:
-                    url = "https://libretranslate.de/translate"
-                    payload = {"q": content, "source": "auto", "target": target_lang, "format": "text"}
-                    resp = await client.post(url, json=payload)
-                    if resp.status_code == 200:
-                        res = resp.json().get("translatedText", "")
-                        await update.message.reply_text(f"🌐 **Translation ({target_lang}):**\n\n{res}")
-                    else:
-                        await update.message.reply_text("❌ Translation service failed.")
-            except Exception as e:
-                await update.message.reply_text(f"❌ Error: {str(e)}")
+        asyncio.create_task(process_translation_tg(update, parts))
+    elif text.startswith('!crypto '):
+        asyncio.create_task(process_crypto_tg(update, text))
+    elif text.startswith('!ai '):
+        asyncio.create_task(process_ai_tg(update, text))
+    elif text == '!joke':
+        asyncio.create_task(process_joke_tg(update))
+    elif text == '!quote':
+        asyncio.create_task(process_quote_tg(update))
+    elif text.startswith('!alarm '):
+        process_alarm_tg(update, text)
     elif text == '!uptime':
         current_time = time.time()
         uptime_seconds = int(current_time - start_time)
@@ -9797,7 +9801,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await spotify_control(update, None)
     elif text == '💬 WhatsApp':
         await whatsapp_control(update, context)
-    elif text == '� All Commands':
+    elif text == ' All Commands':
         await help_command(update, context)
     elif text == 'ℹ️ Help':
         await help_command(update, context)
@@ -12246,14 +12250,14 @@ def run_bot():
     # Create a custom request with proper SSL handling for Windows
     from telegram.request import HTTPXRequest
     custom_request = HTTPXRequest(
-        connection_pool_size=8,
+        connection_pool_size=100, # Increased for multitasking
         read_timeout=60,
         write_timeout=60,
         connect_timeout=60,
         pool_timeout=60
     )
     
-    bot_app = ApplicationBuilder().token(TOKEN).build()
+    bot_app = ApplicationBuilder().token(TOKEN).concurrent_updates(True).build()
     
     # --- CORE COMMANDS ---
     bot_app.add_handler(CommandHandler("start", start))
