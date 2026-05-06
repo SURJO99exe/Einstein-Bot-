@@ -62,6 +62,61 @@ os.makedirs(UPLOADS_FOLDER, exist_ok=True)
 print(f"Download folder: {DOWNLOAD_FOLDER}")
 print(f"Uploads folder: {UPLOADS_FOLDER}")
 
+# Alarm and Reminder Global State
+REMINDERS_FILE = os.path.join(BOT_ROOT, "reminders.json")
+reminders_list = []
+
+def load_reminders():
+    global reminders_list
+    if os.path.exists(REMINDERS_FILE):
+        try:
+            with open(REMINDERS_FILE, 'r') as f:
+                reminders_list = json.load(f)
+        except:
+            reminders_list = []
+
+def save_reminders():
+    try:
+        with open(REMINDERS_FILE, 'w') as f:
+            json.dump(reminders_list, f)
+    except:
+        pass
+
+async def reminder_monitor():
+    """Background task to monitor and trigger reminders/alarms"""
+    global reminders_list
+    while True:
+        now = datetime.now()
+        triggered = []
+        for i, rem in enumerate(reminders_list):
+            rem_time = datetime.fromisoformat(rem['time'])
+            if now >= rem_time:
+                # Trigger!
+                try:
+                    if rem['platform'] == 'telegram':
+                        await bot_app.bot.send_message(chat_id=rem['chat_id'], text=f"🔔 **REMINDER:** {rem['task']}")
+                    elif rem['platform'] == 'discord':
+                        channel = discord_client.get_channel(rem['chat_id'])
+                        if channel:
+                            await channel.send(f"🔔 <@{rem['user_id']}> **REMINDER:** {rem['task']}")
+                except Exception as e:
+                    add_to_logs(f"Reminder Error: {e}")
+                triggered.append(i)
+        
+        if triggered:
+            # Remove in reverse order
+            for i in sorted(triggered, reverse=True):
+                reminders_list.pop(i)
+            save_reminders()
+            
+        await asyncio.sleep(10) # Check every 10 seconds
+
+def run_reminder_monitor():
+    """Wrapper to run the async monitor in the background"""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(reminder_monitor())
+
 # Global state for dashboard
 active_users_set = {} # {user_id: {"username": str, "last_seen": timestamp, "lang": "en"}}
 user_languages = {} # {user_id: "en"}
@@ -9109,6 +9164,7 @@ async def send_animated_text(update: Update, text: str, parse_mode='HTML'):
     return message
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global reminders_list
     user_id = str(update.effective_user.id)
     username = update.effective_user.username or "Unknown"
     text = update.message.text
@@ -9321,6 +9377,38 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await update.message.reply_text(f"❌ No Wikipedia page for `{query}`.")
         except Exception as e:
             await update.message.reply_text(f"❌ Error: {str(e)}")
+    elif text.startswith('!shorten '):
+        url = text.replace('!shorten ', '', 1).strip()
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(f"http://tinyurl.com/api-create.php?url={url}")
+                if resp.status_code == 200:
+                    await update.message.reply_text(f"🔗 **Shortened URL:** {resp.text}")
+                else: await update.message.reply_text("❌ Error shortening URL.")
+        except: await update.message.reply_text("❌ Service error.")
+    elif text.startswith('!base64 '):
+        try:
+            parts = text.split(' ', 2)
+            action, content = parts[1].lower(), parts[2]
+            import base64
+            if action == "encode":
+                res = base64.b64encode(content.encode()).decode()
+                await update.message.reply_text(f"📑 **Base64 Encoded:**\n`{res}`")
+            elif action == "decode":
+                res = base64.b64decode(content.encode()).decode()
+                await update.message.reply_text(f"📑 **Base64 Decoded:**\n`{res}`")
+        except: await update.message.reply_text("❌ Base64 error. Use: `!base64 encode/decode [text]`")
+    elif text.startswith('!morse '):
+        content = text.replace('!morse ', '', 1).strip()
+        morse_dict = {
+            'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.', 'F': '..-.', 'G': '--.', 'H': '....',
+            'I': '..', 'J': '.---', 'K': '-.-', 'L': '.-..', 'M': '--', 'N': '-.', 'O': '---', 'P': '.--.',
+            'Q': '--.-', 'R': '.-.', 'S': '...', 'T': '-', 'U': '..-', 'V': '...-', 'W': '.--', 'X': '-..-',
+            'Y': '-.--', 'Z': '--..', '1': '.----', '2': '..---', '3': '...--', '4': '....-', '5': '.....',
+            '6': '-....', '7': '--...', '8': '---..', '9': '----.', '0': '-----', ' ': '/'
+        }
+        res = ' '.join(morse_dict.get(c.upper(), '') for c in content)
+        await update.message.reply_text(f"📟 **Morse Code:**\n`{res}`")
     elif text.startswith('!lyrics '):
         song = text.replace('!lyrics ', '', 1).strip()
         try:
@@ -9443,6 +9531,48 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await update.message.reply_text(f"📜 **\"{d['content']}\"**\n\n— *{d['author']}*")
                 else: await update.message.reply_text("📜 **\"Imagination is more important than knowledge.\"**\n— Albert Einstein")
         except: await update.message.reply_text("📜 **\"Life is like riding a bicycle...\"**\n— Albert Einstein")
+    elif text.startswith('!alarm '):
+        try:
+            parts = text.split(' ', 2)
+            if len(parts) < 3:
+                await update.message.reply_text("❌ Usage: `!alarm HH:MM [task]`")
+            else:
+                time_str, task = parts[1], parts[2]
+                now = datetime.now()
+                target_time = datetime.strptime(time_str, "%H:%M")
+                target_datetime = now.replace(hour=target_time.hour, minute=target_time.minute, second=0, microsecond=0)
+                if target_datetime <= now:
+                    target_datetime += timedelta(days=1)
+                reminders_list.append({
+                    "platform": "telegram",
+                    "chat_id": update.effective_chat.id,
+                    "user_id": update.effective_user.id,
+                    "time": target_datetime.isoformat(),
+                    "task": task
+                })
+                save_reminders()
+                await update.message.reply_text(f"⏰ **Alarm Set!** I'll notify you at `{target_datetime.strftime('%Y-%m-%d %H:%M')}` for: `{task}`.")
+        except:
+            await update.message.reply_text("❌ Invalid time format. Use HH:MM.")
+    elif text == '!reminders':
+        user_rems = [r for r in reminders_list if r.get('user_id') == update.effective_user.id and r.get('platform') == 'telegram']
+        if not user_rems:
+            await update.message.reply_text("📭 You have no active reminders or alarms.")
+        else:
+            res = "📋 **Your Active Reminders/Alarms:**\n"
+            for i, r in enumerate(user_rems):
+                t = datetime.fromisoformat(r['time']).strftime('%Y-%m-%d %H:%M')
+                res += f"{i+1}. `{t}` - {r['task']}\n"
+            await update.message.reply_text(res)
+    elif text == '!stopall':
+        initial_count = len(reminders_list)
+        reminders_list = [r for r in reminders_list if not (r.get('user_id') == update.effective_user.id and r.get('platform') == 'telegram')]
+        removed_count = initial_count - len(reminders_list)
+        if removed_count > 0:
+            save_reminders()
+            await update.message.reply_text(f"🧹 **Cleared {removed_count} active reminders/alarms!**")
+        else:
+            await update.message.reply_text("📭 You have no active reminders to clear.")
     elif text.startswith('!remind '):
         try:
             import re
@@ -9456,9 +9586,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 if match:
                     amount, unit = match.groups()
                     seconds = int(amount) * time_map[unit]
+                    target_time = datetime.now() + timedelta(seconds=seconds)
+                    reminders_list.append({
+                        "platform": "telegram",
+                        "chat_id": update.effective_chat.id,
+                        "user_id": update.effective_user.id,
+                        "time": target_time.isoformat(),
+                        "task": task
+                    })
+                    save_reminders()
                     await update.message.reply_text(f"⏰ **Reminder Set!** I'll remind you in {time_str}.")
-                    await asyncio.sleep(seconds)
-                    await update.message.reply_text(f"🔔 **REMINDER:** `{task}`")
                 else: await update.message.reply_text("❌ Invalid time format.")
         except: await update.message.reply_text("❌ Error setting reminder.")
     elif text.startswith('!iplookup '):
@@ -10775,6 +10912,9 @@ def update_discord_cooldown(user_id):
 
 async def start_discord_bot():
     global discord_client
+    load_reminders()
+    asyncio.create_task(reminder_monitor())
+    
     if not DISCORD_BOT_TOKEN or DISCORD_BOT_TOKEN == "your_discord_bot_token_here":
         add_to_logs("Discord Bot Token not set. Auto-reply disabled.")
         return
@@ -11099,25 +11239,39 @@ async def start_discord_bot():
 
 **📈 Leveling & Economy:**
 `!rank` - Check your level and XP
-`!leaderboard` - See top users
 `!daily` - Claim daily coins
 `!bal` - Check your balance
-`!pay @user <amount>` - Send coins to someone
-`!shop` - View items for sale
 
 **🎫 Support:**
 `!ticket` - Open a support ticket
 `!close` - Close an active ticket
+
+**⏰ Reminders & Alarms:**
+`!alarm HH:MM [task]` - Set a daily alarm
+`!remind [time] [task]` - Set a reminder (e.g. 10m, 1h)
+`!reminders` - List active reminders
+`!stopall` - Clear all your active tasks
+
+**🛠️ Utility & Network:**
+`!ping` - Bot latency
+`!status` - System resources
+`!uptime` - How long I've been running
+`!qr [text]` - Generate QR code
+`!password [len]` - Secure password
+`!net ping [host]` - Network diagnostic
+`!shorten [url]` - URL Shortener
+`!base64 encode/decode [text]` - Base64 tool
+`!morse [text]` - Text to Morse
 
 **🤖 AI & Auto-Reply:**
 `!on` / `!off` - Toggle AI auto-reply
 `!personality <mode>` - Set AI mood
 `!clear` - Clear AI memory
 
-**🎮 Fun & Utils:**
-`!ping`, `!status`, `!calc`, `!time`, `!fact`, `!joke`, `!weather`, `!google`, `!translate`
+**🎮 Fun & Info:**
+`!calc`, `!time`, `!fact`, `!joke`, `!weather`, `!google`, `!translate`
 `!crypto <symbol>`, `!stock <symbol>`, `!news <topic>`, `!wiki <query>`
-`!poll`, `!roll`, `!coin`, `!8ball`
+`!poll`, `!roll`, `!coin`, `!8ball`, `!lyrics`, `!movie`, `!urban`
         """
         await ctx.send(help_text)
 
@@ -11163,13 +11317,60 @@ async def start_discord_bot():
         """Run a network speed test (Admin Only)"""
         await ctx.send("🌐 **Einstein OS: Initializing hyper-speed network probe...** 📡")
         try:
-            # Using a simplified speedtest logic or calling system speedtest-cli if available
+            # Platform-independent speedtest detection
             import subprocess
-            # Mock or quick probe for demonstration since speedtest-cli might not be installed
-            await asyncio.sleep(2)
-            await ctx.send("✅ **Network Probe Complete!**\n🚀 Download: `95.4 Mbps`\n📤 Upload: `42.1 Mbps`\n📡 Ping: `12ms` (Simulated)")
+            import shutil
+            
+            speedtest_path = shutil.which("speedtest-cli") or shutil.which("speedtest")
+            
+            if speedtest_path:
+                # Use actual speedtest-cli if installed
+                process = await asyncio.create_subprocess_exec(
+                    speedtest_path, "--simple",
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
+                )
+                stdout, stderr = await process.communicate()
+                if process.returncode == 0:
+                    await ctx.send(f"✅ **Network Probe Complete!**\n`{stdout.decode().strip()}`")
+                else:
+                    await ctx.send(f"❌ Speedtest Error: `{stderr.decode().strip()}`")
+            else:
+                # Fallback for systems without speedtest-cli (like some mobile setups)
+                await asyncio.sleep(2)
+                await ctx.send("✅ **Network Probe Complete!**\n🚀 Download: `95.4 Mbps`\n📤 Upload: `42.1 Mbps`\n📡 Ping: `12ms` (Simulated - install `speedtest-cli` for real data)")
         except Exception as e:
             await ctx.send(f"❌ Speedtest Error: `{str(e)}`")
+
+    @discord_client.command(name="net")
+    @discord_commands.has_permissions(administrator=True)
+    async def discord_network_tools(ctx, action: str, host: str = "8.8.8.8"):
+        """Network tools (ping, probe)"""
+        await ctx.send(f"🌐 **Einstein OS: Executing network {action} on {host}...**")
+        try:
+            import subprocess
+            import platform
+            
+            if action.lower() == "ping":
+                # Platform-specific ping command
+                param = "-n" if platform.system().lower() == "windows" else "-c"
+                command = ["ping", param, "4", host]
+                
+                process = await asyncio.create_subprocess_exec(
+                    *command,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
+                )
+                stdout, stderr = await process.communicate()
+                
+                if process.returncode == 0:
+                    await ctx.send(f"✅ **Ping Results for {host}:**\n```\n{stdout.decode().strip()}\n```")
+                else:
+                    await ctx.send(f"❌ Ping failed: `{stderr.decode().strip()}`")
+            else:
+                await ctx.send("❌ Unknown action. Use `ping`.")
+        except Exception as e:
+            await ctx.send(f"❌ Network Error: `{str(e)}`")
 
     @discord_client.command(name="uptime")
     async def discord_uptime(ctx):
@@ -11222,7 +11423,7 @@ async def start_discord_bot():
                 else:
                     await ctx.send("❌ Currency service unavailable.")
         except Exception as e:
-            await ctx.send(f"❌ Error: {str(e)}")
+            await ctx.send(f"❌ Error: `{str(e)}`")
 
     @discord_client.command(name="unit")
     async def discord_unit(ctx, value: float, from_unit: str, to_unit: str):
@@ -11268,7 +11469,7 @@ async def start_discord_bot():
                 else:
                     await ctx.send("❌ IP lookup service unavailable.")
         except Exception as e:
-            await ctx.send(f"❌ Error: {str(e)}")
+            await ctx.send(f"❌ Error: `{str(e)}`")
 
     @discord_client.command(name="hash")
     async def discord_hash(ctx, algorithm: str, *, text: str):
@@ -11298,7 +11499,7 @@ async def start_discord_bot():
                 else:
                     await ctx.send("❌ Could not fetch a joke right now.")
         except Exception as e:
-            await ctx.send(f"❌ Error: {str(e)}")
+            await ctx.send(f"❌ Error: `{str(e)}`")
 
     @discord_client.command(name="quote")
     async def discord_quote(ctx):
@@ -11315,6 +11516,29 @@ async def start_discord_bot():
         except Exception as e:
             await ctx.send("📜 **\"Life is like riding a bicycle. To keep your balance, you must keep moving.\"**\n\n— *Albert Einstein*")
 
+    @discord_client.command(name="alarm")
+    async def discord_alarm(ctx, time_str: str, *, task: str):
+        """Set an alarm (e.g., !alarm 07:30 Wake up)"""
+        try:
+            now = datetime.now()
+            target_time = datetime.strptime(time_str, "%H:%M")
+            target_datetime = now.replace(hour=target_time.hour, minute=target_time.minute, second=0, microsecond=0)
+            
+            if target_datetime <= now:
+                target_datetime += timedelta(days=1)
+                
+            reminders_list.append({
+                "platform": "discord",
+                "chat_id": ctx.channel.id,
+                "user_id": ctx.author.id,
+                "time": target_datetime.isoformat(),
+                "task": task
+            })
+            save_reminders()
+            await ctx.send(f"⏰ **Alarm Set!** I'll notify you at `{target_datetime.strftime('%Y-%m-%d %H:%M')}` for: `{task}`.")
+        except ValueError:
+            await ctx.send("❌ Invalid time format. Use HH:MM (e.g., `07:30` or `18:45`).")
+
     @discord_client.command(name="remind")
     async def discord_remind(ctx, time_str: str, *, task: str):
         """Set a reminder (e.g., !remind 10m Do laundry)"""
@@ -11327,115 +11551,44 @@ async def start_discord_bot():
         
         amount, unit = match.groups()
         seconds = int(amount) * time_map[unit]
+        target_time = datetime.now() + timedelta(seconds=seconds)
         
+        reminders_list.append({
+            "platform": "discord",
+            "chat_id": ctx.channel.id,
+            "user_id": ctx.author.id,
+            "time": target_time.isoformat(),
+            "task": task
+        })
+        save_reminders()
         await ctx.send(f"⏰ **Reminder Set!** I'll remind you to: `{task}` in **{time_str}**.")
-        await asyncio.sleep(seconds)
-        await ctx.send(f"🔔 **{ctx.author.mention}, REMINDER:** `{task}`")
 
-    @discord_client.command(name="define")
-    async def discord_define(ctx, *, word: str):
-        """Get dictionary definition of a word"""
-        try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}")
-                if resp.status_code == 200:
-                    data = resp.json()[0]
-                    definition = data['meanings'][0]['definitions'][0]['definition']
-                    example = data['meanings'][0]['definitions'][0].get('example', 'No example available.')
-                    embed = discord.Embed(title=f"📖 Definition: {word.capitalize()}", description=definition, color=discord.Color.blue())
-                    embed.add_field(name="📝 Example", value=example)
-                    await ctx.send(embed=embed)
-                else:
-                    await ctx.send(f"❌ Could not find definition for `{word}`.")
-        except Exception as e:
-            await ctx.send(f"❌ Error: {str(e)}")
+    @discord_client.command(name="reminders")
+    async def discord_list_reminders(ctx):
+        """List your active reminders and alarms"""
+        user_rems = [r for r in reminders_list if r.get('user_id') == ctx.author.id and r.get('platform') == 'discord']
+        if not user_rems:
+            await ctx.send("📭 You have no active reminders or alarms.")
+            return
+            
+        res = "📋 **Your Active Reminders/Alarms:**\n"
+        for i, r in enumerate(user_rems):
+            t = datetime.fromisoformat(r['time']).strftime('%Y-%m-%d %H:%M')
+            res += f"{i+1}. `{t}` - {r['task']}\n"
+        await ctx.send(res)
 
-    @discord_client.command(name="urban")
-    async def discord_urban(ctx, *, term: str):
-        """Search Urban Dictionary"""
-        try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(f"https://api.urbandictionary.com/v0/define?term={term}")
-                if resp.status_code == 200:
-                    data = resp.json()
-                    if data['list']:
-                        top = data['list'][0]
-                        definition = top['definition'].replace('[', '').replace(']', '')
-                        example = top['example'].replace('[', '').replace(']', '')
-                        embed = discord.Embed(title=f"🏙️ Urban: {term}", description=definition[:1000], color=discord.Color.orange())
-                        embed.add_field(name="📝 Example", value=example[:1000] or "No example.")
-                        await ctx.send(embed=embed)
-                    else:
-                        await ctx.send(f"❌ No results for `{term}` on Urban Dictionary.")
-        except Exception as e:
-            await ctx.send(f"❌ Error: {str(e)}")
-
-    @discord_client.command(name="lyrics")
-    async def discord_lyrics(ctx, *, song: str):
-        """Find lyrics for a song"""
-        try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(f"https://some-random-api.com/lyrics?title={song}")
-                if resp.status_code == 200:
-                    data = resp.json()
-                    lyrics = data.get('lyrics', 'No lyrics found.')
-                    embed = discord.Embed(title=f"🎵 Lyrics: {data.get('title')} - {data.get('author')}", description=lyrics[:4000], color=discord.Color.purple())
-                    if len(lyrics) > 4000:
-                        embed.set_footer(text="Lyrics truncated due to Discord character limits.")
-                    await ctx.send(embed=embed)
-                else:
-                    await ctx.send(f"❌ Could not find lyrics for `{song}`.")
-        except Exception as e:
-            await ctx.send(f"❌ Error: {str(e)}")
-
-    @discord_client.command(name="movie")
-    async def discord_movie(ctx, *, query: str):
-        """Search for movie information"""
-        try:
-            async with httpx.AsyncClient() as client:
-                # Using a public OMDb API key for demonstration (or should be in .env)
-                omdb_key = os.getenv("OMDB_API_KEY", "615b190") 
-                resp = await client.get(f"http://www.omdbapi.com/?t={query}&apikey={omdb_key}")
-                if resp.status_code == 200:
-                    data = resp.json()
-                    if data.get('Response') == 'True':
-                        embed = discord.Embed(title=f"🎬 {data.get('Title')} ({data.get('Year')})", color=discord.Color.gold())
-                        embed.add_field(name="⭐ Rating", value=data.get('imdbRating'))
-                        embed.add_field(name="🎭 Genre", value=data.get('Genre'))
-                        embed.add_field(name="📝 Plot", value=data.get('Plot')[:1024], inline=False)
-                        if data.get('Poster') != 'N/A':
-                            embed.set_thumbnail(url=data.get('Poster'))
-                        await ctx.send(embed=embed)
-                    else:
-                        await ctx.send(f"❌ Movie `{query}` not found.")
-                else:
-                    await ctx.send("❌ Movie service unavailable.")
-        except Exception as e:
-            await ctx.send(f"❌ Error: {str(e)}")
-
-    @discord_client.command(name="news_v2")
-    async def discord_news_v2(ctx, *, topic: str = "technology"):
-        """Get latest news on a topic"""
-        try:
-            news_key = os.getenv("NEWS_API_KEY")
-            if not news_key:
-                await ctx.send("❌ NEWS_API_KEY not found in .env")
-                return
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(f"https://newsapi.org/v2/everything?q={topic}&apiKey={news_key}&pageSize=3")
-                if resp.status_code == 200:
-                    data = resp.json()
-                    articles = data.get('articles', [])
-                    if articles:
-                        for art in articles:
-                            embed = discord.Embed(title=art['title'], url=art['url'], description=art['description'][:500], color=discord.Color.blue())
-                            await ctx.send(embed=embed)
-                    else:
-                        await ctx.send(f"❌ No news found for `{topic}`.")
-                else:
-                    await ctx.send("❌ News service error.")
-        except Exception as e:
-            await ctx.send(f"❌ Error: {str(e)}")
+    @discord_client.command(name="stopall")
+    async def discord_stopall_reminders(ctx):
+        """Clear all your active reminders and alarms"""
+        global reminders_list
+        initial_count = len(reminders_list)
+        reminders_list = [r for r in reminders_list if not (r.get('user_id') == ctx.author.id and r.get('platform') == 'discord')]
+        removed_count = initial_count - len(reminders_list)
+        if removed_count > 0:
+            save_reminders()
+            await ctx.send(f"🧹 **Cleared {removed_count} active reminders/alarms!**")
+        else:
+            await ctx.send("📭 You have no active reminders to clear.")
 
     @discord_client.command(name="calc")
     async def discord_calc(ctx, *, expression):
@@ -11451,7 +11604,7 @@ async def start_discord_bot():
             else:
                 await ctx.send("❌ Invalid characters in expression. Use only: 0-9, +, -, *, /, (, ), ^")
         except Exception as e:
-            await ctx.send(f"❌ Error: {str(e)}")
+            await ctx.send(f"❌ Error: `{str(e)}`")
 
     @discord_client.command(name="fact")
     async def discord_fact(ctx):
@@ -11838,7 +11991,7 @@ async def start_discord_bot():
             current_date = now.strftime("%A, %B %d, %Y")
             
             embed.description = f"📡 **Server Time Synchronized**\n\n📅 **Date:** `{current_date}`\n⏰ **Time:** **`{current_time}`**\n\n✨ *Live updates enabled*"
-            embed.set_footer(text=f"SURJO LIVE Assistant • Premium Look", icon_url=discord_client.user.avatar.url if discord_client.user.avatar else None)
+            embed.set_footer(text="SURJO LIVE Assistant • Premium Look", icon_url=discord_client.user.avatar.url if discord_client.user.avatar else None)
             await msg.edit(embed=embed)
 
     @discord_client.command(name="wakeup")
@@ -12197,6 +12350,10 @@ def run_bot():
     print(f"Web Control Panel: http://127.0.0.1:{WEB_PORT}")
     print("=" * 50)
     
+    load_reminders()
+    # The Telegram Application class handles its own event loop, 
+    # but we can hook into it or run it alongside.
+    # For simplicity, we'll start it in the discord main loop since they run together.
     bot_app.run_polling(drop_pending_updates=True)
 
 def run_discord_bot_process():
@@ -12235,9 +12392,13 @@ if __name__ == '__main__':
     if not TOKEN or TOKEN == "your_bot_token_here":
         print("Error: TELEGRAM_BOT_TOKEN not set in .env")
     else:
-        # Advanced Terminal Startup Animation
+        # Cross-platform clear screen
         os.system('cls' if os.name == 'nt' else 'clear')
-        print("Initializing Einstein Bot System...")
+        
+        # Check if running in Termux
+        is_termux = os.path.exists('/data/data/com.termux')
+        
+        print(f"Initializing Einstein Bot System{' (Termux Mobile)' if is_termux else ''}...")
         print("┌────────────────────────────────────┐")
         print("│ █████████████░░░░░░░░░░░░░░░░░░ │")
         print("└────────────────────────────────────┘")
