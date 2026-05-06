@@ -9706,10 +9706,30 @@ async def process_message_background(update: Update, context: ContextTypes.DEFAU
         res = "🔥 **Top 10 Processes (CPU):**\n\n" + "\n".join(processes)
         await update.message.reply_text(res, parse_mode='Markdown')
     elif text == '!speedtest':
-        if not await is_admin(update): return await admin_only(update)
         await update.message.reply_text("🌐 **Einstein OS: Initializing hyper-speed network probe...** 📡")
-        await asyncio.sleep(2)
-        await update.message.reply_text("✅ **Network Probe Complete!**\n🚀 Download: `95.4 Mbps`\n📤 Upload: `42.1 Mbps`\n📡 Ping: `12ms` (Simulated)")
+        try:
+            import shutil
+            import asyncio
+            
+            speedtest_path = shutil.which("speedtest-cli") or shutil.which("speedtest")
+            
+            if speedtest_path:
+                process = await asyncio.create_subprocess_exec(
+                    speedtest_path, "--simple",
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
+                )
+                stdout, stderr = await process.communicate()
+                if process.returncode == 0:
+                    await update.message.reply_text(f"✅ **Network Probe Complete!**\n`{stdout.decode().strip()}`")
+                else:
+                    await update.message.reply_text(f"❌ Speedtest Error: `{stderr.decode().strip()}`")
+            else:
+                # Fallback if speedtest-cli is not installed
+                await asyncio.sleep(2)
+                await update.message.reply_text("✅ **Network Probe Complete!**\n🚀 Download: `102.4 Mbps`\n📤 Upload: `48.1 Mbps`\n📡 Ping: `8ms` (Simulated - install `speedtest-cli` for real data)")
+        except Exception as e:
+            await update.message.reply_text(f"❌ Speedtest Error: `{str(e)}`")
     elif text == '👨‍🔬 Einstein' or text == 'Einstein AI':
         await update.message.reply_text(
             "👨‍🔬 **Einstein AI Mode**\n\n"
@@ -11373,19 +11393,16 @@ async def start_discord_bot():
         await ctx.send(res)
 
     @discord_client.command(name="speedtest")
-    @discord_commands.has_permissions(administrator=True)
     async def discord_speedtest(ctx):
-        """Run a network speed test (Admin Only)"""
+        """Run a network speed test"""
         await ctx.send("🌐 **Einstein OS: Initializing hyper-speed network probe...** 📡")
         try:
-            # Platform-independent speedtest detection
-            import subprocess
             import shutil
+            import asyncio
             
             speedtest_path = shutil.which("speedtest-cli") or shutil.which("speedtest")
             
             if speedtest_path:
-                # Use actual speedtest-cli if installed
                 process = await asyncio.create_subprocess_exec(
                     speedtest_path, "--simple",
                     stdout=asyncio.subprocess.PIPE,
@@ -11397,9 +11414,9 @@ async def start_discord_bot():
                 else:
                     await ctx.send(f"❌ Speedtest Error: `{stderr.decode().strip()}`")
             else:
-                # Fallback for systems without speedtest-cli (like some mobile setups)
+                # Fallback if speedtest-cli is not installed
                 await asyncio.sleep(2)
-                await ctx.send("✅ **Network Probe Complete!**\n🚀 Download: `95.4 Mbps`\n📤 Upload: `42.1 Mbps`\n📡 Ping: `12ms` (Simulated - install `speedtest-cli` for real data)")
+                await ctx.send("✅ **Network Probe Complete!**\n🚀 Download: `98.2 Mbps`\n📤 Upload: `45.4 Mbps`\n📡 Ping: `10ms` (Simulated - install `speedtest-cli` for real data)")
         except Exception as e:
             await ctx.send(f"❌ Speedtest Error: `{str(e)}`")
 
