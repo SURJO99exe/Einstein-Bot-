@@ -7953,6 +7953,212 @@ async def ai_command_processor(update: Update, context: ContextTypes.DEFAULT_TYP
     except:
         await ollama_reply(update, query, context)
 
+async def wikipedia_search_tg(update: Update, query: str):
+    try:
+        url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{query.replace(' ', '_')}"
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url)
+            if resp.status_code == 200:
+                data = resp.json()
+                res = f"📚 **Wikipedia: {data.get('title')}**\n\n{data.get('extract')}\n\n🔗 {data.get('content_urls', {}).get('desktop', {}).get('page', '')}"
+                await update.message.reply_text(res)
+            else:
+                await update.message.reply_text(f"❌ No Wikipedia page for `{query}`.")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Error: {str(e)}")
+
+async def shorten_url_tg(update: Update, url: str):
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(f"http://tinyurl.com/api-create.php?url={url}")
+            if resp.status_code == 200:
+                await update.message.reply_text(f"🔗 **Shortened URL:** {resp.text}")
+            else: await update.message.reply_text("❌ Error shortening URL.")
+    except: await update.message.reply_text("❌ Service error.")
+
+async def generate_qr_tg(update: Update, content: str):
+    import qrcode
+    from io import BytesIO
+    try:
+        qr = qrcode.QRCode(version=1, box_size=10, border=5)
+        qr.add_data(content)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        with BytesIO() as img_bin:
+            img.save(img_bin, 'PNG')
+            img_bin.seek(0)
+            await update.message.reply_photo(photo=img_bin, caption=f"✅ **QR Code Generated for:** `{content[:50]}`")
+    except Exception as e:
+        await update.message.reply_text(f"❌ QR Error: {str(e)}")
+
+async def generate_password_tg(update: Update):
+    import secrets, string
+    alphabet = string.ascii_letters + string.digits + string.punctuation
+    password = ''.join(secrets.choice(alphabet) for i in range(16))
+    await update.message.reply_text(f"🔐 **Your Secure Password:**\n`{password}`\n\n*Note: Please save this safely!*")
+
+async def process_base64_tg(update: Update, text: str):
+    try:
+        parts = text.split(' ', 2)
+        if len(parts) < 3:
+            await update.message.reply_text("❌ Use: `!base64 encode/decode [text]`")
+            return
+        action, content = parts[1].lower(), parts[2]
+        import base64
+        if action == "encode":
+            res = base64.b64encode(content.encode()).decode()
+            await update.message.reply_text(f"📑 **Base64 Encoded:**\n`{res}`")
+        elif action == "decode":
+            res = base64.b64decode(content.encode()).decode()
+            await update.message.reply_text(f"📑 **Base64 Decoded:**\n`{res}`")
+    except: await update.message.reply_text("❌ Base64 error.")
+
+async def process_morse_tg(update: Update, content: str):
+    morse_dict = {
+        'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.', 'F': '..-.', 'G': '--.', 'H': '....',
+        'I': '..', 'J': '.---', 'K': '-.-', 'L': '.-..', 'M': '--', 'N': '-.', 'O': '---', 'P': '.--.',
+        'Q': '--.-', 'R': '.-.', 'S': '...', 'T': '-', 'U': '..-', 'V': '...-', 'W': '.--', 'X': '-..-',
+        'Y': '-.--', 'Z': '--..', '1': '.----', '2': '..---', '3': '...--', '4': '....-', '5': '.....',
+        '6': '-....', '7': '--...', '8': '---..', '9': '----.', '0': '-----', ' ': '/'
+    }
+    res = ' '.join(morse_dict.get(c.upper(), '') for c in content)
+    await update.message.reply_text(f"📟 **Morse Code:**\n`{res}`")
+
+async def process_calc_tg(update: Update, expr: str):
+    try:
+        allowed = set('0123456789+-*/().^ ')
+        if all(c in allowed for c in expr):
+            res = eval(expr.replace('^', '**'))
+            await update.message.reply_text(f"🔢 **Result:** `{res}`")
+        else: await update.message.reply_text("❌ Invalid characters.")
+    except Exception as e: await update.message.reply_text(f"❌ Calc Error: {str(e)}")
+
+async def process_joke_tg(update: Update):
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get("https://official-joke-api.appspot.com/random_joke")
+            if resp.status_code == 200:
+                d = resp.json()
+                await update.message.reply_text(f"😄 **{d['setup']}**\n\n*... {d['punchline']}*")
+    except: await update.message.reply_text("❌ No jokes found.")
+
+async def process_quote_tg(update: Update):
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get("https://api.quotable.io/random")
+            if resp.status_code == 200:
+                d = resp.json()
+                await update.message.reply_text(f"📜 **\"{d['content']}\"**\n\n— *{d['author']}*")
+    except: await update.message.reply_text("📜 **\"Imagination is more important than knowledge.\"**\n— Einstein")
+
+async def process_fact_tg(update: Update):
+    import random
+    facts = ["Light takes 8m 20s from Sun to Earth.", "DNA stands for Deoxyribonucleic Acid.", "Neutron stars are extremely dense."]
+    await update.message.reply_text(f"🔬 **Fact:** {random.choice(facts)}")
+
+async def process_lyrics_tg(update: Update, song: str):
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(f"https://some-random-api.com/lyrics?title={song}")
+            if resp.status_code == 200:
+                data = resp.json()
+                lyrics = data.get('lyrics', 'No lyrics found.')
+                await update.message.reply_text(f"🎵 **Lyrics: {data.get('title')}**\n\n{lyrics[:4000]}")
+            else: await update.message.reply_text(f"❌ No lyrics for `{song}`.")
+    except: await update.message.reply_text("❌ Lyrics error.")
+
+async def process_movie_tg(update: Update, query: str):
+    try:
+        omdb_key = os.getenv("OMDB_API_KEY", "615b190")
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(f"http://www.omdbapi.com/?t={query}&apikey={omdb_key}")
+            if resp.status_code == 200:
+                d = resp.json()
+                if d.get('Response') == 'True':
+                    res = f"🎬 **{d.get('Title')} ({d.get('Year')})**\n⭐ Rating: {d.get('imdbRating')}\n🎭 Genre: {d.get('Genre')}\n📝 Plot: {d.get('Plot')[:500]}"
+                    if d.get('Poster') != 'N/A': await update.message.reply_photo(photo=d.get('Poster'), caption=res)
+                    else: await update.message.reply_text(res)
+                else: await update.message.reply_text(f"❌ Movie `{query}` not found.")
+    except: await update.message.reply_text("❌ Movie service error.")
+
+async def process_urban_tg(update: Update, term: str):
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(f"https://api.urbandictionary.com/v0/define?term={term}")
+            if resp.status_code == 200:
+                data = resp.json()
+                if data['list']:
+                    top = data['list'][0]
+                    defn = top['definition'].replace('[', '').replace(']', '')
+                    await update.message.reply_text(f"🏙️ **Urban: {term}**\n\n{defn[:1000]}")
+                else: await update.message.reply_text("❌ No results.")
+    except: await update.message.reply_text("❌ Urban error.")
+
+async def process_crypto_tg(update: Update, symbol: str):
+    try:
+        mapping = {"btc": "bitcoin", "eth": "ethereum", "sol": "solana"}
+        coin_id = mapping.get(symbol.lower(), symbol.lower())
+        url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd"
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url)
+            if resp.status_code == 200:
+                data = resp.json()
+                if coin_id in data:
+                    price = data[coin_id]['usd']
+                    await update.message.reply_text(f"💰 **{symbol.upper()}:** `${price:,}`")
+                else: await update.message.reply_text("❌ Coin not found.")
+    except: await update.message.reply_text("❌ Crypto error.")
+
+async def process_translation_tg(update: Update, parts: list):
+    try:
+        if len(parts) < 3:
+            await update.message.reply_text("❌ Usage: `!translate [lang_code] [text]`\nExample: `!translate bn Hello`")
+            return
+        target_lang = parts[1]
+        content = parts[2]
+        async with httpx.AsyncClient() as client:
+            url = "https://libretranslate.de/translate"
+            payload = {"q": content, "source": "auto", "target": target_lang, "format": "text"}
+            resp = await client.post(url, json=payload)
+            if resp.status_code == 200:
+                res = resp.json().get("translatedText", "")
+                await update.message.reply_text(f"🌐 **Translation ({target_lang}):**\n\n{res}")
+            else:
+                await update.message.reply_text("❌ Translation service failed.")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Error: {str(e)}")
+
+async def process_ai_tg(update: Update, text: str):
+    query = text[4:].strip()
+    if not query:
+        await update.message.reply_text("❓ **Please provide a prompt for the AI.**")
+        return
+    await ollama_reply(update, query)
+
+async def process_alarm_tg(update: Update, text: str):
+    try:
+        parts = text.split(' ', 2)
+        if len(parts) < 3:
+            await update.message.reply_text("❌ Usage: `!alarm HH:MM [task]`")
+            return
+        time_str, task = parts[1], parts[2]
+        now = datetime.now()
+        target_time = datetime.strptime(time_str, "%H:%M")
+        target_datetime = now.replace(hour=target_time.hour, minute=target_time.minute, second=0, microsecond=0)
+        if target_datetime <= now:
+            target_datetime += timedelta(days=1)
+        reminders_list.append({
+            "platform": "telegram",
+            "chat_id": update.effective_chat.id,
+            "user_id": update.effective_user.id,
+            "time": target_datetime.isoformat(),
+            "task": task
+        })
+        save_reminders()
+        await update.message.reply_text(f"⏰ **Alarm Set!** at `{target_datetime.strftime('%H:%M')}` for: `{task}`.")
+    except:
+        await update.message.reply_text("❌ Invalid time format. Use HH:MM.")
+
 async def ollama_reply(update: Update, message: str, context: ContextTypes.DEFAULT_TYPE = None):
     """Send any text to Ollama for AI reply with enhanced animated effect and branding"""
     user_id = str(update.effective_user.id)
@@ -9679,32 +9885,49 @@ async def process_message_background(update: Update, context: ContextTypes.DEFAU
                         await update.message.reply_text("❌ IP service unavailable.")
         except Exception as e:
             await update.message.reply_text(f"❌ Error looking up IP: {str(e)}")
-    elif text.startswith('!translate '):
-        parts = text.split(' ', 2)
-        asyncio.create_task(process_translation_tg(update, parts))
-    elif text.startswith('!crypto '):
-        asyncio.create_task(process_crypto_tg(update, text))
-    elif text.startswith('!ai '):
-        asyncio.create_task(process_ai_tg(update, text))
+    elif text.startswith('!google '):
+        query = text[8:].strip()
+        asyncio.create_task(search_web(update, query))
+    elif text.startswith('!wiki '):
+        query = text[6:].strip()
+        asyncio.create_task(wikipedia_search_tg(update, query))
+    elif text.startswith('!weather '):
+        city = text[9:].strip()
+        asyncio.create_task(get_weather(update, city))
+    elif text.startswith('!shorten '):
+        url = text[9:].strip()
+        asyncio.create_task(shorten_url_tg(update, url))
+    elif text.startswith('!qr '):
+        content = text[4:].strip()
+        asyncio.create_task(generate_qr_tg(update, content))
+    elif text == '!password':
+        asyncio.create_task(generate_password_tg(update))
+    elif text.startswith('!base64 '):
+        asyncio.create_task(process_base64_tg(update, text))
+    elif text.startswith('!morse '):
+        content = text[7:].strip()
+        asyncio.create_task(process_morse_tg(update, content))
+    elif text.startswith('!calc '):
+        expr = text[6:].strip()
+        asyncio.create_task(process_calc_tg(update, expr))
     elif text == '!joke':
         asyncio.create_task(process_joke_tg(update))
     elif text == '!quote':
         asyncio.create_task(process_quote_tg(update))
-    elif text.startswith('!alarm '):
-        process_alarm_tg(update, text)
-    elif text == '!uptime':
-        current_time = time.time()
-        uptime_seconds = int(current_time - start_time)
-        uptime_str = str(timedelta(seconds=uptime_seconds))
-        await update.message.reply_text(f"⏱️ **Einstein Bot Uptime:** `{uptime_str}`")
-    elif text == '!ps':
-        if not await is_admin(update): return await admin_only(update)
-        import psutil
-        processes = []
-        for proc in sorted(psutil.process_iter(['pid', 'name', 'cpu_percent']), key=lambda x: x.info['cpu_percent'], reverse=True)[:10]:
-            processes.append(f"`{proc.info['pid']}` | `{proc.info['name']}` | `{proc.info['cpu_percent']}%`")
-        res = "🔥 **Top 10 Processes (CPU):**\n\n" + "\n".join(processes)
-        await update.message.reply_text(res, parse_mode='Markdown')
+    elif text == '!fact':
+        asyncio.create_task(process_fact_tg(update))
+    elif text.startswith('!lyrics '):
+        song = text[8:].strip()
+        asyncio.create_task(process_lyrics_tg(update, song))
+    elif text.startswith('!movie '):
+        movie = text[7:].strip()
+        asyncio.create_task(process_movie_tg(update, movie))
+    elif text.startswith('!urban '):
+        term = text[7:].strip()
+        asyncio.create_task(process_urban_tg(update, term))
+    elif text.startswith('!crypto '):
+        symbol = text[8:].strip()
+        asyncio.create_task(process_crypto_tg(update, symbol))
     elif text == '!speedtest':
         await update.message.reply_text("🌐 **Einstein OS: Initializing hyper-speed network probe...** 📡")
         try:
