@@ -1,6 +1,17 @@
 ﻿import yt_dlp
-import discord
-from discord.ext import commands as discord_commands
+try:
+    import discord
+    from discord.ext import commands as discord_commands
+    HAS_DISCORD = True
+except ImportError:
+    HAS_DISCORD = False
+
+try:
+    from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter, ImageEnhance, ImageGrab
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
+
 import os
 import logging
 import psutil
@@ -95,7 +106,7 @@ async def reminder_monitor():
                 try:
                     if rem['platform'] == 'telegram':
                         await bot_app.bot.send_message(chat_id=rem['chat_id'], text=f"🔔 **REMINDER:** {rem['task']}")
-                    elif rem['platform'] == 'discord':
+                    elif rem['platform'] == 'discord' and HAS_DISCORD:
                         channel = discord_client.get_channel(rem['chat_id'])
                         if channel:
                             await channel.send(f"🔔 <@{rem['user_id']}> **REMINDER:** {rem['task']}")
@@ -6639,40 +6650,34 @@ async def send_large_file(update, context, file_path, caption=None):
             async def progress_callback(current, total):
                 await upload_progress(current, total, status_msg, file_name, start_time, last_update)
 
-            if file_size_mb > 50:  # Only show progress for files > 50MB
-                status_msg = await update.message.reply_text(f"📤 Preparing to upload <code>{file_name}</code>...", parse_mode='HTML')
-                
-                if file_path.lower().endswith(('.mp4', '.mkv', '.avi', '.mov')):
-                    await context.bot.send_video(
-                        chat_id=update.effective_chat.id,
-                        video=open(file_path, 'rb'),
-                        caption=caption,
-                        parse_mode='HTML',
-                        write_timeout=600,
-                        read_timeout=600,
-                        connect_timeout=600,
-                        pool_timeout=600,
-                        progress_callback=progress_callback
-                    )
-                else:
-                    await context.bot.send_document(
-                        chat_id=update.effective_chat.id,
-                        document=open(file_path, 'rb'),
-                        caption=caption,
-                        parse_mode='HTML',
-                        write_timeout=600,
-                        read_timeout=600,
-                        connect_timeout=600,
-                        pool_timeout=600,
-                        progress_callback=progress_callback
-                    )
-                await status_msg.delete()
+            # Show progress for all files to ensure consistent UX
+            status_msg = await update.message.reply_text(f"📤 Preparing to upload <code>{file_name}</code>...", parse_mode='HTML')
+            
+            if file_path.lower().endswith(('.mp4', '.mkv', '.avi', '.mov')):
+                await context.bot.send_video(
+                    chat_id=update.effective_chat.id,
+                    video=open(file_path, 'rb'),
+                    caption=caption,
+                    parse_mode='HTML',
+                    write_timeout=600,
+                    read_timeout=600,
+                    connect_timeout=600,
+                    pool_timeout=600,
+                    # Removed progress_callback as it's not supported in this version of python-telegram-bot
+                )
             else:
-                # Small files - direct send
-                if file_path.lower().endswith(('.mp4', '.mkv', '.avi', '.mov')):
-                    await context.bot.send_video(chat_id=update.effective_chat.id, video=open(file_path, 'rb'), caption=caption, parse_mode='HTML')
-                else:
-                    await context.bot.send_document(chat_id=update.effective_chat.id, document=open(file_path, 'rb'), caption=caption, parse_mode='HTML')
+                await context.bot.send_document(
+                    chat_id=update.effective_chat.id,
+                    document=open(file_path, 'rb'),
+                    caption=caption,
+                    parse_mode='HTML',
+                    write_timeout=600,
+                    read_timeout=600,
+                    connect_timeout=600,
+                    pool_timeout=600,
+                    # Removed progress_callback as it's not supported in this version of python-telegram-bot
+                )
+            await status_msg.delete()
         
         return True
     else:
@@ -11215,6 +11220,9 @@ def update_discord_cooldown(user_id):
     discord_cooldowns[user_id] = time.time()
 
 async def start_discord_bot():
+    if not HAS_DISCORD:
+        logging.warning("Discord functionality is disabled due to missing dependencies.")
+        return
     global discord_client
     load_reminders()
     asyncio.create_task(reminder_monitor())
