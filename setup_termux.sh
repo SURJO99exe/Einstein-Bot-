@@ -18,14 +18,25 @@ pkg install clang make binutils -y
 export LDFLAGS="-L${PREFIX}/lib"
 export CPPFLAGS="-I${PREFIX}/include"
 
-# Install python requirements
-echo "📦 Installing Python dependencies..."
+# Create essential folders
+echo "� Creating essential bot folders..."
+mkdir -p downloads uploads assets media_analysis notes screenshots temp_tts
+
+# Set up virtual environment
+if [ ! -d "venv" ]; then
+    echo "🌐 Creating virtual environment (venv)..."
+    python -m venv venv
+else
+    echo "✅ Virtual environment already exists."
+fi
+
+# Activate venv and install requirements
+echo "📦 Installing Python dependencies inside venv..."
+source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# Additional Termux-specific handling for voice
-# Note: gTTS works fine, but PyNaCl might need manual compilation on some devices
-# If PyNaCl fails, we skip voice for now to keep it running
-
 echo "✅ Setup Complete!"
-echo "💡 To run the bot, use: python bot.py"
+echo "💡 To run the bot in the future, use:"
+echo "   source venv/bin/activate"
+echo "   python bot.py"
