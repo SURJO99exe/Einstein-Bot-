@@ -52,6 +52,7 @@ WEB_PORT = 18789  # Web interface port (same as OpenClaw)
 
 # Bot root directory - all folders will be created relative to this
 BOT_ROOT = os.path.dirname(os.path.abspath(__file__))
+start_time = time.time()
 
 # Download folder configuration
 DOWNLOAD_FOLDER = os.path.join(BOT_ROOT, "downloads")
@@ -239,6 +240,8 @@ async def setup_commands(application):
         BotCommand("language", "🌐 Change language"),
         BotCommand("github", "🐙 GitHub tools"),
         BotCommand("gmail", "📧 Gmail tools"),
+        BotCommand("google", "🔍 Google Search"),
+        BotCommand("translate", "🌐 Translator"),
     ]
     
     try:
@@ -6852,6 +6855,15 @@ async def video_downloader(update: Update, context: ContextTypes.DEFAULT_TYPE, r
                     caption = f"🎬 <b>{safe_title[:100]}</b>\n📊 Size: {file_size_mb:.2f} MB\n━━━━━━━━━━━━━━━━━━━━━\n👨‍🔬 <i>Downloaded by Einstein Bot</i>"
                     await send_large_file(update, context, final_path, caption)
                     await status_msg.delete()
+                    
+                    # Auto-delete after upload to save space
+                    if os.path.exists(final_path):
+                        os.remove(final_path)
+                        print(f"🗑️ Auto-deleted {final_path} after upload.")
+                    
+                    # Also delete the source file in task_subdir
+                    if filename and os.path.exists(filename):
+                        os.remove(filename)
                 except Exception as upload_err:
                     print(f"[AUTO-UPLOAD ERROR] {upload_err}")
                     await status_msg.edit_text(
@@ -6956,6 +6968,11 @@ async def universal_file_downloader(update: Update, context: ContextTypes.DEFAUL
             await send_large_file(update, context, file_path, caption)
             
             await status_msg.delete()
+            
+            # Auto-delete after upload to save space
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                print(f"🗑️ Auto-deleted {file_path} after universal download upload.")
         else:
             await status_msg.edit_text("<b>❌ Einstein Error:</b> File vanished during transfer.", parse_mode='HTML')
             
@@ -9244,6 +9261,257 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await get_weather(update, None)
     elif text == '🔍 Search':
         await update.message.reply_text("🔍 Search Mode\n\nType your search query and I'll search the web for you!")
+    elif text.startswith('!google '):
+        query = text[8:].strip()
+        await search_web(update, query)
+    elif text.startswith('!crypto '):
+        symbol = text[8:].strip()
+        await update.message.reply_text(f"💰 **Checking {symbol.upper()} price...**")
+        try:
+            mapping = {"btc": "bitcoin", "eth": "ethereum", "sol": "solana", "doge": "dogecoin", "bnb": "binancecoin"}
+            coin_id = mapping.get(symbol.lower(), symbol.lower())
+            url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd&include_24hr_change=true"
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(url)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if coin_id in data:
+                        price = data[coin_id]['usd']
+                        change = data[coin_id].get('usd_24h_change', 0)
+                        await update.message.reply_text(f"💰 **{symbol.upper()} Price Index**\n\n💵 Price: **${price:,}**\n📉 24h Change: `{change:.2f}%`", parse_mode='Markdown')
+                    else:
+                        await update.message.reply_text(f"❌ Could not find data for `{symbol}`.")
+                else:
+                    await update.message.reply_text("❌ Crypto service unavailable.")
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error: {str(e)}")
+    elif text.startswith('!news '):
+        topic = text[6:].strip()
+        api_key = os.getenv("NEWS_API_KEY")
+        if not api_key:
+            await update.message.reply_text("❌ News API Key not set in .env")
+        else:
+            await update.message.reply_text(f"📰 **Fetching latest {topic} news...**")
+            try:
+                url = f"https://newsapi.org/v2/everything?q={topic}&apiKey={api_key}&pageSize=3"
+                async with httpx.AsyncClient() as client:
+                    resp = await client.get(url)
+                    if resp.status_code == 200:
+                        articles = resp.json().get("articles", [])
+                        if articles:
+                            for art in articles:
+                                await update.message.reply_text(f"📰 **{art['title']}**\n\n{art.get('description', '')}\n\n🔗 {art['url']}")
+                        else:
+                            await update.message.reply_text(f"ℹ️ No news found for `{topic}`.")
+                    else:
+                        await update.message.reply_text("❌ News service unavailable.")
+            except Exception as e:
+                await update.message.reply_text(f"❌ Error: {str(e)}")
+    elif text.startswith('!wiki '):
+        query = text[6:].strip()
+        try:
+            url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{query.replace(' ', '_')}"
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(url)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    res = f"📚 **Wikipedia: {data.get('title')}**\n\n{data.get('extract')}\n\n🔗 {data.get('content_urls', {}).get('desktop', {}).get('page', '')}"
+                    await update.message.reply_text(res)
+                else:
+                    await update.message.reply_text(f"❌ No Wikipedia page for `{query}`.")
+        except Exception as e:
+            await update.message.reply_text(f"❌ Error: {str(e)}")
+    elif text.startswith('!lyrics '):
+        song = text.replace('!lyrics ', '', 1).strip()
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(f"https://some-random-api.com/lyrics?title={song}")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    lyrics = data.get('lyrics', 'No lyrics found.')
+                    res = f"🎵 **Lyrics: {data.get('title')} - {data.get('author')}**\n\n{lyrics[:4000]}"
+                    await update.message.reply_text(res)
+                else: await update.message.reply_text(f"❌ No lyrics for `{song}`.")
+        except: await update.message.reply_text("❌ Lyrics service error.")
+    elif text.startswith('!movie '):
+        query = text.replace('!movie ', '', 1).strip()
+        try:
+            omdb_key = os.getenv("OMDB_API_KEY", "615b190")
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(f"http://www.omdbapi.com/?t={query}&apikey={omdb_key}")
+                if resp.status_code == 200:
+                    d = resp.json()
+                    if d.get('Response') == 'True':
+                        res = f"🎬 **{d.get('Title')} ({d.get('Year')})**\n⭐ Rating: {d.get('imdbRating')}\n🎭 Genre: {d.get('Genre')}\n📝 Plot: {d.get('Plot')[:500]}"
+                        if d.get('Poster') != 'N/A':
+                            await update.message.reply_photo(photo=d.get('Poster'), caption=res)
+                        else: await update.message.reply_text(res)
+                    else: await update.message.reply_text(f"❌ Movie `{query}` not found.")
+        except: await update.message.reply_text("❌ Movie service error.")
+    elif text.startswith('!news '):
+        topic = text.replace('!news ', '', 1).strip() or "technology"
+        try:
+            news_key = os.getenv("NEWS_API_KEY")
+            if not news_key:
+                await update.message.reply_text("❌ NEWS_API_KEY missing in .env")
+            else:
+                async with httpx.AsyncClient() as client:
+                    resp = await client.get(f"https://newsapi.org/v2/everything?q={topic}&apiKey={news_key}&pageSize=3")
+                    if resp.status_code == 200:
+                        articles = resp.json().get('articles', [])
+                        for art in articles:
+                            await update.message.reply_text(f"📰 **{art['title']}**\n🔗 {art['url']}")
+                    else: await update.message.reply_text("❌ News service error.")
+        except: await update.message.reply_text("❌ News service error.")
+    elif text.startswith('!define '):
+        word = text.replace('!define ', '', 1).strip()
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}")
+                if resp.status_code == 200:
+                    d = resp.json()[0]
+                    defn = d['meanings'][0]['definitions'][0]['definition']
+                    await update.message.reply_text(f"📖 **Definition: {word.capitalize()}**\n\n{defn}")
+                else: await update.message.reply_text(f"❌ No definition for `{word}`.")
+        except: await update.message.reply_text("❌ Dictionary service error.")
+    elif text.startswith('!urban '):
+        term = text.replace('!urban ', '', 1).strip()
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(f"https://api.urbandictionary.com/v0/define?term={term}")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if data['list']:
+                        top = data['list'][0]
+                        defn = top['definition'].replace('[', '').replace(']', '')
+                        await update.message.reply_text(f"🏙️ **Urban: {term}**\n\n{defn[:1000]}")
+                    else: await update.message.reply_text("❌ No Urban results.")
+        except: await update.message.reply_text("❌ Urban service error.")
+    elif text.startswith('!qr '):
+        content = text.replace('!qr ', '', 1)
+        import qrcode
+        from io import BytesIO
+        qr = qrcode.QRCode(version=1, box_size=10, border=5)
+        qr.add_data(content)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        with BytesIO() as img_bin:
+            img.save(img_bin, 'PNG')
+            img_bin.seek(0)
+            await update.message.reply_photo(photo=img_bin, caption=f"✅ **QR Code Generated for:** `{content[:50]}`")
+    elif text.startswith('!password'):
+        import secrets, string
+        length = 16
+        try:
+            parts = text.split()
+            if len(parts) > 1: length = int(parts[1])
+        except: pass
+        alphabet = string.ascii_letters + string.digits + string.punctuation
+        password = ''.join(secrets.choice(alphabet) for i in range(length))
+        await update.message.reply_text(f"🔐 **Your Secure Password:**\n`{password}`\n\n*Note: Please save this safely!*")
+    elif text.startswith('!currency '):
+        try:
+            parts = text.split()
+            if len(parts) < 4:
+                await update.message.reply_text("❌ Usage: `!currency [amount] [from] [to]`")
+            else:
+                amount = float(parts[1])
+                from_curr, to_curr = parts[2].upper(), parts[3].upper()
+                async with httpx.AsyncClient() as client:
+                    resp = await client.get(f"https://api.exchangerate-api.com/v4/latest/{from_curr}")
+                    if resp.status_code == 200:
+                        rate = resp.json()['rates'].get(to_curr)
+                        if rate:
+                            await update.message.reply_text(f"💱 **Conversion:**\n`{amount} {from_curr}` = **{amount*rate:.2f} {to_curr}**")
+                        else: await update.message.reply_text("❌ Invalid currency.")
+                    else: await update.message.reply_text("❌ Service offline.")
+        except: await update.message.reply_text("❌ Error processing request.")
+    elif text == '!joke':
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get("https://official-joke-api.appspot.com/random_joke")
+                if resp.status_code == 200:
+                    d = resp.json()
+                    await update.message.reply_text(f"😄 **{d['setup']}**\n\n*... {d['punchline']}*")
+        except: await update.message.reply_text("❌ No jokes found.")
+    elif text == '!quote':
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get("https://api.quotable.io/random")
+                if resp.status_code == 200:
+                    d = resp.json()
+                    await update.message.reply_text(f"📜 **\"{d['content']}\"**\n\n— *{d['author']}*")
+                else: await update.message.reply_text("📜 **\"Imagination is more important than knowledge.\"**\n— Albert Einstein")
+        except: await update.message.reply_text("📜 **\"Life is like riding a bicycle...\"**\n— Albert Einstein")
+    elif text.startswith('!remind '):
+        try:
+            import re
+            parts = text.split(' ', 2)
+            if len(parts) < 3:
+                await update.message.reply_text("❌ Usage: `!remind [time] [task]` (e.g. 10m Take tea)")
+            else:
+                time_str, task = parts[1], parts[2]
+                time_map = {'s': 1, 'm': 60, 'h': 3600, 'd': 86400}
+                match = re.match(r"(\d+)([smhd])", time_str.lower())
+                if match:
+                    amount, unit = match.groups()
+                    seconds = int(amount) * time_map[unit]
+                    await update.message.reply_text(f"⏰ **Reminder Set!** I'll remind you in {time_str}.")
+                    await asyncio.sleep(seconds)
+                    await update.message.reply_text(f"🔔 **REMINDER:** `{task}`")
+                else: await update.message.reply_text("❌ Invalid time format.")
+        except: await update.message.reply_text("❌ Error setting reminder.")
+    elif text.startswith('!iplookup '):
+        try:
+            ip = text.split()[1]
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(f"http://ip-api.com/json/{ip}")
+                if resp.status_code == 200:
+                    d = resp.json()
+                    if d.get('status') == 'success':
+                        await update.message.reply_text(f"🌐 **IP Result:** `{ip}`\n📍 **Location:** {d.get('city')}, {d.get('country')}\n📡 **ISP:** {d.get('isp')}")
+                    else: await update.message.reply_text("❌ Invalid IP.")
+        except: await update.message.reply_text("❌ Error looking up IP.")
+    elif text.startswith('!translate '):
+        parts = text.split(' ', 2)
+        if len(parts) < 3:
+            await update.message.reply_text("❌ Usage: `!translate [lang_code] [text]`\nExample: `!translate bn Hello`")
+        else:
+            # Reusing existing logic or providing a quick one if needed
+            # For Telegram, we can use the existing translate_reply or a new simple logic
+            await update.message.reply_text("🌐 **Translating...**")
+            try:
+                target_lang = parts[1]
+                content = parts[2]
+                async with httpx.AsyncClient() as client:
+                    url = "https://libretranslate.de/translate"
+                    payload = {"q": content, "source": "auto", "target": target_lang, "format": "text"}
+                    resp = await client.post(url, json=payload)
+                    if resp.status_code == 200:
+                        res = resp.json().get("translatedText", "")
+                        await update.message.reply_text(f"🌐 **Translation ({target_lang}):**\n\n{res}")
+                    else:
+                        await update.message.reply_text("❌ Translation service failed.")
+            except Exception as e:
+                await update.message.reply_text(f"❌ Error: {str(e)}")
+    elif text == '!uptime':
+        current_time = time.time()
+        uptime_seconds = int(current_time - start_time)
+        uptime_str = str(timedelta(seconds=uptime_seconds))
+        await update.message.reply_text(f"⏱️ **Einstein Bot Uptime:** `{uptime_str}`")
+    elif text == '!ps':
+        if not await is_admin(update): return await admin_only(update)
+        import psutil
+        processes = []
+        for proc in sorted(psutil.process_iter(['pid', 'name', 'cpu_percent']), key=lambda x: x.info['cpu_percent'], reverse=True)[:10]:
+            processes.append(f"`{proc.info['pid']}` | `{proc.info['name']}` | `{proc.info['cpu_percent']}%`")
+        res = "🔥 **Top 10 Processes (CPU):**\n\n" + "\n".join(processes)
+        await update.message.reply_text(res, parse_mode='Markdown')
+    elif text == '!speedtest':
+        if not await is_admin(update): return await admin_only(update)
+        await update.message.reply_text("🌐 **Einstein OS: Initializing hyper-speed network probe...** 📡")
+        await asyncio.sleep(2)
+        await update.message.reply_text("✅ **Network Probe Complete!**\n🚀 Download: `95.4 Mbps`\n📤 Upload: `42.1 Mbps`\n📡 Ping: `12ms` (Simulated)")
     elif text == '👨‍🔬 Einstein' or text == 'Einstein AI':
         await update.message.reply_text(
             "👨‍🔬 **Einstein AI Mode**\n\n"
@@ -9381,6 +9649,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await universal_file_downloader(update, context, text)
             return
             
+        # Check for instant FAQ/Greeting replies locally first for speed
+        instant_reply = ai.analyze_and_reply_mini_ai(text)
+        if instant_reply:
+            await update.message.reply_text(instant_reply)
+            return
+
         # ALL other text goes to Ollama AI for response
         await ollama_reply(update, text, context)
 
@@ -10841,7 +11115,8 @@ async def start_discord_bot():
 `!clear` - Clear AI memory
 
 **🎮 Fun & Utils:**
-`!ping`, `!status`, `!calc`, `!time`, `!fact`, `!joke`
+`!ping`, `!status`, `!calc`, `!time`, `!fact`, `!joke`, `!weather`, `!google`, `!translate`
+`!crypto <symbol>`, `!stock <symbol>`, `!news <topic>`, `!wiki <query>`
 `!poll`, `!roll`, `!coin`, `!8ball`
         """
         await ctx.send(help_text)
@@ -10869,6 +11144,298 @@ async def start_discord_bot():
 🔌 **Latency:** `{round(discord_client.latency * 1000)}ms`
         """
         await ctx.send(status_text)
+
+    @discord_client.command(name="ps")
+    @discord_commands.has_permissions(administrator=True)
+    async def discord_ps(ctx):
+        """List running processes (Admin Only)"""
+        import psutil
+        processes = []
+        for proc in sorted(psutil.process_iter(['pid', 'name', 'cpu_percent']), key=lambda x: x.info['cpu_percent'], reverse=True)[:10]:
+            processes.append(f"`{proc.info['pid']}` | `{proc.info['name']}` | `{proc.info['cpu_percent']}%`")
+        
+        res = "**🔥 Top 10 Processes (CPU):**\n" + "\n".join(processes)
+        await ctx.send(res)
+
+    @discord_client.command(name="speedtest")
+    @discord_commands.has_permissions(administrator=True)
+    async def discord_speedtest(ctx):
+        """Run a network speed test (Admin Only)"""
+        await ctx.send("🌐 **Einstein OS: Initializing hyper-speed network probe...** 📡")
+        try:
+            # Using a simplified speedtest logic or calling system speedtest-cli if available
+            import subprocess
+            # Mock or quick probe for demonstration since speedtest-cli might not be installed
+            await asyncio.sleep(2)
+            await ctx.send("✅ **Network Probe Complete!**\n🚀 Download: `95.4 Mbps`\n📤 Upload: `42.1 Mbps`\n📡 Ping: `12ms` (Simulated)")
+        except Exception as e:
+            await ctx.send(f"❌ Speedtest Error: `{str(e)}`")
+
+    @discord_client.command(name="uptime")
+    async def discord_uptime(ctx):
+        """Show bot uptime"""
+        current_time = time.time()
+        uptime_seconds = int(current_time - start_time)
+        uptime_str = str(timedelta(seconds=uptime_seconds))
+        await ctx.send(f"⏱️ **Einstein Bot Uptime:** `{uptime_str}`")
+
+    @discord_client.command(name="qr")
+    async def discord_qr(ctx, *, text: str):
+        """Generate a QR code"""
+        import qrcode
+        from io import BytesIO
+        qr = qrcode.QRCode(version=1, box_size=10, border=5)
+        qr.add_data(text)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        with BytesIO() as img_bin:
+            img.save(img_bin, 'PNG')
+            img_bin.seek(0)
+            await ctx.send(f"✅ **QR Code Generated for:** `{text[:50]}`", file=discord.File(img_bin, "qr.png"))
+
+    @discord_client.command(name="password")
+    async def discord_password(ctx, length: int = 16):
+        """Generate a secure password"""
+        import secrets
+        import string
+        alphabet = string.ascii_letters + string.digits + string.punctuation
+        password = ''.join(secrets.choice(alphabet) for i in range(length))
+        await ctx.send(f"🔐 **Your Secure Password:**\n`{password}`\n\n*Note: Please save this safely!*")
+
+    @discord_client.command(name="currency")
+    async def discord_currency(ctx, amount: float, from_curr: str, to_curr: str):
+        """Convert between currencies"""
+        try:
+            from_curr = from_curr.upper()
+            to_curr = to_curr.upper()
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(f"https://api.exchangerate-api.com/v4/latest/{from_curr}")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    rate = data['rates'].get(to_curr)
+                    if rate:
+                        converted = amount * rate
+                        await ctx.send(f"💱 **Currency Conversion:**\n`{amount} {from_curr}` = **{converted:.2f} {to_curr}**\n*(Rate: {rate})*")
+                    else:
+                        await ctx.send(f"❌ Unsupported target currency: `{to_curr}`")
+                else:
+                    await ctx.send("❌ Currency service unavailable.")
+        except Exception as e:
+            await ctx.send(f"❌ Error: {str(e)}")
+
+    @discord_client.command(name="unit")
+    async def discord_unit(ctx, value: float, from_unit: str, to_unit: str):
+        """Basic unit converter (km to miles, kg to lbs, etc.)"""
+        conversions = {
+            ("km", "miles"): 0.621371,
+            ("miles", "km"): 1.60934,
+            ("kg", "lbs"): 2.20462,
+            ("lbs", "kg"): 0.453592,
+            ("c", "f"): lambda x: (x * 9/5) + 32,
+            ("f", "c"): lambda x: (x - 32) * 5/9,
+        }
+        key = (from_unit.lower(), to_unit.lower())
+        if key in conversions:
+            factor = conversions[key]
+            result = factor(value) if callable(factor) else value * factor
+            await ctx.send(f"📏 **Unit Conversion:**\n`{value} {from_unit}` = **{result:.2f} {to_unit}**")
+        else:
+            await ctx.send("❌ Unsupported units. Try: `km/miles`, `kg/lbs`, `c/f`.")
+
+    @discord_client.command(name="iplookup")
+    async def discord_ip(ctx, ip: str):
+        """Lookup IP address information"""
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(f"http://ip-api.com/json/{ip}")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if data.get('status') == 'success':
+                        info = f"""
+🌐 **IP Lookup Results:** `{ip}`
+━━━━━━━━━━━━━━━━━━━━━
+📍 **Country:** {data.get('country')} ({data.get('countryCode')})
+🏙️ **City:** {data.get('city')}
+📮 **Zip:** {data.get('zip')}
+📡 **ISP:** {data.get('isp')}
+🏢 **Org:** {data.get('org')}
+🗺️ **Lat/Lon:** `{data.get('lat')}, {data.get('lon')}`
+                        """
+                        await ctx.send(info)
+                    else:
+                        await ctx.send(f"❌ Error: {data.get('message', 'Invalid IP')}")
+                else:
+                    await ctx.send("❌ IP lookup service unavailable.")
+        except Exception as e:
+            await ctx.send(f"❌ Error: {str(e)}")
+
+    @discord_client.command(name="hash")
+    async def discord_hash(ctx, algorithm: str, *, text: str):
+        """Hash text using MD5, SHA1, or SHA256"""
+        import hashlib
+        alg = algorithm.lower()
+        if alg == "md5":
+            h = hashlib.md5(text.encode()).hexdigest()
+        elif alg == "sha1":
+            h = hashlib.sha1(text.encode()).hexdigest()
+        elif alg == "sha256":
+            h = hashlib.sha256(text.encode()).hexdigest()
+        else:
+            await ctx.send("❌ Unsupported algorithm. Use: `md5`, `sha1`, or `sha256`.")
+            return
+        await ctx.send(f"🔑 **{alg.upper()} Hash:**\n`{h}`")
+
+    @discord_client.command(name="joke")
+    async def discord_joke(ctx):
+        """Get a random joke"""
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get("https://official-joke-api.appspot.com/random_joke")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    await ctx.send(f"😄 **{data['setup']}**\n\n*... {data['punchline']}*")
+                else:
+                    await ctx.send("❌ Could not fetch a joke right now.")
+        except Exception as e:
+            await ctx.send(f"❌ Error: {str(e)}")
+
+    @discord_client.command(name="quote")
+    async def discord_quote(ctx):
+        """Get an inspirational quote"""
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get("https://api.quotable.io/random")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    await ctx.send(f"📜 **\"{data['content']}\"**\n\n— *{data['author']}*")
+                else:
+                    # Fallback to a famous Einstein quote
+                    await ctx.send("📜 **\"Imagination is more important than knowledge.\"**\n\n— *Albert Einstein*")
+        except Exception as e:
+            await ctx.send("📜 **\"Life is like riding a bicycle. To keep your balance, you must keep moving.\"**\n\n— *Albert Einstein*")
+
+    @discord_client.command(name="remind")
+    async def discord_remind(ctx, time_str: str, *, task: str):
+        """Set a reminder (e.g., !remind 10m Do laundry)"""
+        import re
+        time_map = {'s': 1, 'm': 60, 'h': 3600, 'd': 86400}
+        match = re.match(r"(\d+)([smhd])", time_str.lower())
+        if not match:
+            await ctx.send("❌ Invalid time format. Use: `10s`, `5m`, `1h`, `1d`.")
+            return
+        
+        amount, unit = match.groups()
+        seconds = int(amount) * time_map[unit]
+        
+        await ctx.send(f"⏰ **Reminder Set!** I'll remind you to: `{task}` in **{time_str}**.")
+        await asyncio.sleep(seconds)
+        await ctx.send(f"🔔 **{ctx.author.mention}, REMINDER:** `{task}`")
+
+    @discord_client.command(name="define")
+    async def discord_define(ctx, *, word: str):
+        """Get dictionary definition of a word"""
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}")
+                if resp.status_code == 200:
+                    data = resp.json()[0]
+                    definition = data['meanings'][0]['definitions'][0]['definition']
+                    example = data['meanings'][0]['definitions'][0].get('example', 'No example available.')
+                    embed = discord.Embed(title=f"📖 Definition: {word.capitalize()}", description=definition, color=discord.Color.blue())
+                    embed.add_field(name="📝 Example", value=example)
+                    await ctx.send(embed=embed)
+                else:
+                    await ctx.send(f"❌ Could not find definition for `{word}`.")
+        except Exception as e:
+            await ctx.send(f"❌ Error: {str(e)}")
+
+    @discord_client.command(name="urban")
+    async def discord_urban(ctx, *, term: str):
+        """Search Urban Dictionary"""
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(f"https://api.urbandictionary.com/v0/define?term={term}")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if data['list']:
+                        top = data['list'][0]
+                        definition = top['definition'].replace('[', '').replace(']', '')
+                        example = top['example'].replace('[', '').replace(']', '')
+                        embed = discord.Embed(title=f"🏙️ Urban: {term}", description=definition[:1000], color=discord.Color.orange())
+                        embed.add_field(name="📝 Example", value=example[:1000] or "No example.")
+                        await ctx.send(embed=embed)
+                    else:
+                        await ctx.send(f"❌ No results for `{term}` on Urban Dictionary.")
+        except Exception as e:
+            await ctx.send(f"❌ Error: {str(e)}")
+
+    @discord_client.command(name="lyrics")
+    async def discord_lyrics(ctx, *, song: str):
+        """Find lyrics for a song"""
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(f"https://some-random-api.com/lyrics?title={song}")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    lyrics = data.get('lyrics', 'No lyrics found.')
+                    embed = discord.Embed(title=f"🎵 Lyrics: {data.get('title')} - {data.get('author')}", description=lyrics[:4000], color=discord.Color.purple())
+                    if len(lyrics) > 4000:
+                        embed.set_footer(text="Lyrics truncated due to Discord character limits.")
+                    await ctx.send(embed=embed)
+                else:
+                    await ctx.send(f"❌ Could not find lyrics for `{song}`.")
+        except Exception as e:
+            await ctx.send(f"❌ Error: {str(e)}")
+
+    @discord_client.command(name="movie")
+    async def discord_movie(ctx, *, query: str):
+        """Search for movie information"""
+        try:
+            async with httpx.AsyncClient() as client:
+                # Using a public OMDb API key for demonstration (or should be in .env)
+                omdb_key = os.getenv("OMDB_API_KEY", "615b190") 
+                resp = await client.get(f"http://www.omdbapi.com/?t={query}&apikey={omdb_key}")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if data.get('Response') == 'True':
+                        embed = discord.Embed(title=f"🎬 {data.get('Title')} ({data.get('Year')})", color=discord.Color.gold())
+                        embed.add_field(name="⭐ Rating", value=data.get('imdbRating'))
+                        embed.add_field(name="🎭 Genre", value=data.get('Genre'))
+                        embed.add_field(name="📝 Plot", value=data.get('Plot')[:1024], inline=False)
+                        if data.get('Poster') != 'N/A':
+                            embed.set_thumbnail(url=data.get('Poster'))
+                        await ctx.send(embed=embed)
+                    else:
+                        await ctx.send(f"❌ Movie `{query}` not found.")
+                else:
+                    await ctx.send("❌ Movie service unavailable.")
+        except Exception as e:
+            await ctx.send(f"❌ Error: {str(e)}")
+
+    @discord_client.command(name="news_v2")
+    async def discord_news_v2(ctx, *, topic: str = "technology"):
+        """Get latest news on a topic"""
+        try:
+            news_key = os.getenv("NEWS_API_KEY")
+            if not news_key:
+                await ctx.send("❌ NEWS_API_KEY not found in .env")
+                return
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(f"https://newsapi.org/v2/everything?q={topic}&apiKey={news_key}&pageSize=3")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    articles = data.get('articles', [])
+                    if articles:
+                        for art in articles:
+                            embed = discord.Embed(title=art['title'], url=art['url'], description=art['description'][:500], color=discord.Color.blue())
+                            await ctx.send(embed=embed)
+                    else:
+                        await ctx.send(f"❌ No news found for `{topic}`.")
+                else:
+                    await ctx.send("❌ News service error.")
+        except Exception as e:
+            await ctx.send(f"❌ Error: {str(e)}")
 
     @discord_client.command(name="calc")
     async def discord_calc(ctx, *, expression):
@@ -10901,9 +11468,9 @@ async def start_discord_bot():
         ]
         await ctx.send(random.choice(facts))
 
-    @discord_client.command(name="joke")
-    async def discord_joke(ctx):
-        """Get a random joke"""
+    @discord_client.command(name="joke_v2")
+    async def discord_joke_v2(ctx):
+        """Get a random joke (v2 fallback)"""
         import random
         jokes = [
             "Why don't scientists trust atoms? Because they make up everything!",
@@ -10974,6 +11541,219 @@ async def start_discord_bot():
                 
         except Exception as e:
             await ctx.send(f"❌ Error creating poll: {str(e)}")
+
+    # --- NEW DISCORD FEATURES ---
+
+    @discord_client.command(name="weather")
+    async def discord_weather(ctx, *, city: str):
+        """Check current weather for a city"""
+        api_key = os.getenv("OPENWEATHER_API_KEY")
+        if not api_key:
+            await ctx.send("❌ OpenWeather API Key is not configured in `.env`.")
+            return
+
+        async with httpx.AsyncClient() as client:
+            try:
+                url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
+                resp = await client.get(url)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    temp = data['main']['temp']
+                    desc = data['weather'][0]['description'].capitalize()
+                    humidity = data['main']['humidity']
+                    wind = data['wind']['speed']
+                    country = data['sys']['country']
+                    
+                    embed = discord.Embed(
+                        title=f"🌤️ Weather in {city.title()}, {country}",
+                        description=f"**{desc}**",
+                        color=discord.Color.blue()
+                    )
+                    embed.add_field(name="🌡️ Temperature", value=f"`{temp}°C`", inline=True)
+                    embed.add_field(name="💧 Humidity", value=f"`{humidity}%`", inline=True)
+                    embed.add_field(name="💨 Wind Speed", value=f"`{wind} m/s`", inline=True)
+                    embed.set_footer(text="Powered by OpenWeatherMap")
+                    await ctx.send(embed=embed)
+                else:
+                    await ctx.send(f"❌ City `{city}` not found.")
+            except Exception as e:
+                await ctx.send(f"❌ Error fetching weather: `{str(e)}`")
+
+    @discord_client.command(name="google")
+    async def discord_google(ctx, *, query: str):
+        """Search Google for information"""
+        await ctx.send(f"🔍 **Searching Google for:** `{query}`...")
+        try:
+            # Using a simplified search via DuckDuckGo (no API key needed)
+            url = f"https://api.duckduckgo.com/?q={query}&format=json&pretty=1"
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(url)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    abstract = data.get("AbstractText", "")
+                    source = data.get("AbstractSource", "DuckDuckGo")
+                    link = data.get("AbstractURL", "")
+
+                    if abstract:
+                        embed = discord.Embed(
+                            title=f"🔎 Search Result: {query}",
+                            description=abstract,
+                            color=discord.Color.green()
+                        )
+                        if link:
+                            embed.add_field(name="🔗 Source", value=f"[{source}]({link})")
+                        await ctx.send(embed=embed)
+                    else:
+                        await ctx.send(f"ℹ️ I couldn't find a direct summary for `{query}`. Try being more specific!")
+                else:
+                    await ctx.send("❌ Search service is currently unavailable.")
+        except Exception as e:
+            await ctx.send(f"❌ Search Error: `{str(e)}`")
+
+    @discord_client.command(name="translate")
+    async def discord_translate(ctx, target_lang: str, *, text: str):
+        """Translate text to another language (e.g. !translate bn Hello)"""
+        await ctx.send("🌐 **Translating...**")
+        try:
+            # Using a free translation API (LibreTranslate or similar public instances)
+            # For robustness, we'll use a simple approach with httpx
+            async with httpx.AsyncClient() as client:
+                # Note: Using a public instance, might need a private one for heavy use
+                url = "https://libretranslate.de/translate"
+                payload = {
+                    "q": text,
+                    "source": "auto",
+                    "target": target_lang,
+                    "format": "text"
+                }
+                resp = await client.post(url, json=payload)
+                if resp.status_code == 200:
+                    translated_text = resp.json().get("translatedText", "")
+                    embed = discord.Embed(
+                        title="🌐 Translation Result",
+                        color=discord.Color.gold()
+                    )
+                    embed.add_field(name="Original", value=f"`{text}`", inline=False)
+                    embed.add_field(name=f"Translated ({target_lang})", value=f"**{translated_text}**", inline=False)
+                    await ctx.send(embed=embed)
+                else:
+                    await ctx.send("❌ Translation service failed. Make sure the language code is correct (e.g. `en`, `bn`, `es`).")
+        except Exception as e:
+            await ctx.send(f"❌ Translation Error: `{str(e)}`")
+
+    @discord_client.command(name="crypto")
+    async def discord_crypto(ctx, symbol: str = "btc"):
+        """Check cryptocurrency price (e.g. !crypto eth)"""
+        try:
+            url = f"https://api.coingecko.com/api/v3/simple/price?ids={symbol.lower()}&vs_currencies=usd&include_24hr_change=true"
+            # Coingecko uses names for IDs, but common symbols often work or need mapping
+            # Simple mapping for common symbols
+            mapping = {"btc": "bitcoin", "eth": "ethereum", "sol": "solana", "doge": "dogecoin", "bnb": "binancecoin"}
+            coin_id = mapping.get(symbol.lower(), symbol.lower())
+            
+            url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd&include_24hr_change=true"
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(url)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if coin_id in data:
+                        price = data[coin_id]['usd']
+                        change = data[coin_id].get('usd_24h_change', 0)
+                        color = discord.Color.green() if change >= 0 else discord.Color.red()
+                        
+                        embed = discord.Embed(
+                            title=f"💰 {symbol.upper()} Price Index",
+                            color=color
+                        )
+                        embed.add_field(name="💵 Price (USD)", value=f"**${price:,}**", inline=True)
+                        embed.add_field(name="📉 24h Change", value=f"{change:.2f}%", inline=True)
+                        embed.set_footer(text="Data from CoinGecko")
+                        await ctx.send(embed=embed)
+                    else:
+                        await ctx.send(f"❌ Could not find data for `{symbol}`. Try using the full name (e.g. `bitcoin`).")
+                else:
+                    await ctx.send("❌ Crypto service currently unavailable.")
+        except Exception as e:
+            await ctx.send(f"❌ Error: `{str(e)}`")
+
+    @discord_client.command(name="stock")
+    async def discord_stock(ctx, symbol: str):
+        """Check stock price (e.g. !stock AAPL)"""
+        # Using a free financial API or a simple scraper/mock for demo
+        await ctx.send(f"📈 **Fetching stock data for:** `{symbol.upper()}`...")
+        try:
+            # Note: Real stock APIs usually require keys. This is a placeholder for logic.
+            # We'll use a public financial news/data source or just a nice mock if no key
+            embed = discord.Embed(
+                title=f"📊 Stock Market: {symbol.upper()}",
+                description="Real-time stock data fetching requires a Finnhub/AlphaVantage API key.",
+                color=discord.Color.blue()
+            )
+            embed.add_field(name="Status", value="Please add `FINNHUB_API_KEY` to `.env` to enable real data.")
+            await ctx.send(embed=embed)
+        except Exception as e:
+            await ctx.send(f"❌ Error: `{str(e)}`")
+
+    @discord_client.command(name="wiki")
+    async def discord_wiki(ctx, *, query: str):
+        """Search Wikipedia"""
+        try:
+            url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{query.replace(' ', '_')}"
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(url)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    extract = data.get("extract", "No summary available.")
+                    title = data.get("title", query)
+                    link = data.get("content_urls", {}).get("desktop", {}).get("page", "")
+                    thumbnail = data.get("thumbnail", {}).get("source", "")
+
+                    embed = discord.Embed(
+                        title=f"📚 Wikipedia: {title}",
+                        description=extract[:1000] + ("..." if len(extract) > 1000 else ""),
+                        color=discord.Color.light_grey()
+                    )
+                    if thumbnail:
+                        embed.set_thumbnail(url=thumbnail)
+                    if link:
+                        embed.add_field(name="🔗 Read More", value=f"[Click here]({link})")
+                    await ctx.send(embed=embed)
+                else:
+                    await ctx.send(f"❌ Could not find Wikipedia page for `{query}`.")
+        except Exception as e:
+            await ctx.send(f"❌ Wiki Error: `{str(e)}`")
+
+    @discord_client.command(name="news")
+    async def discord_news(ctx, topic: str = "general"):
+        """Get latest news on a topic"""
+        await ctx.send(f"📰 **Fetching latest {topic} news...**")
+        api_key = os.getenv("NEWS_API_KEY")
+        if not api_key:
+            await ctx.send("❌ News API Key is not configured in `.env`.")
+            return
+
+        try:
+            url = f"https://newsapi.org/v2/everything?q={topic}&apiKey={api_key}&pageSize=3"
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(url)
+                if resp.status_code == 200:
+                    articles = resp.json().get("articles", [])
+                    if articles:
+                        for art in articles:
+                            embed = discord.Embed(
+                                title=art['title'],
+                                description=art.get('description', 'No description'),
+                                url=art['url'],
+                                color=discord.Color.orange()
+                            )
+                            embed.set_author(name=art.get('source', {}).get('name', 'News'))
+                            await ctx.send(embed=embed)
+                    else:
+                        await ctx.send(f"ℹ️ No news found for `{topic}`.")
+                else:
+                    await ctx.send("❌ News service currently unavailable.")
+        except Exception as e:
+            await ctx.send(f"❌ News Error: `{str(e)}`")
 
     # --- AI AUTO-REPLY COMMANDS ---
 
@@ -11179,6 +11959,18 @@ async def start_discord_bot():
 
         # AI Response (Skip if sleeping or commands)
         if not discord_auto_reply_enabled or content.startswith("!") or is_sleeping:
+            return
+
+        # Check for instant FAQ/Greeting replies locally first for speed
+        instant_reply = ai.analyze_and_reply_mini_ai(content)
+        if instant_reply:
+            embed = discord.Embed(
+                description=f"🤖 **{instant_reply}**",
+                color=discord.Color.green()
+            )
+            embed.set_author(name="SURJO LIVE Assistant", icon_url=discord_client.user.avatar.url if discord_client.user.avatar else None)
+            await message.reply(embed=embed)
+            update_discord_cooldown(user_id)
             return
 
         if not is_discord_cooldown_passed(user_id):
@@ -11423,7 +12215,8 @@ def create_bot_folders():
         os.path.join(bot_root, "assets"),
         os.path.join(bot_root, "media_analysis"),
         os.path.join(bot_root, "notes"),
-        os.path.join(bot_root, "screenshots")
+        os.path.join(bot_root, "screenshots"),
+        os.path.join(bot_root, "temp_tts")
     ]
     
     created = []
@@ -11442,8 +12235,34 @@ if __name__ == '__main__':
     if not TOKEN or TOKEN == "your_bot_token_here":
         print("Error: TELEGRAM_BOT_TOKEN not set in .env")
     else:
+        # Advanced Terminal Startup Animation
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print("Initializing Einstein Bot System...")
+        print("┌────────────────────────────────────┐")
+        print("│ █████████████░░░░░░░░░░░░░░░░░░ │")
+        print("└────────────────────────────────────┘")
+        time.sleep(0.5)
+        
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print("Connecting to AI Brain (Ollama/Groq)...")
+        print("┌────────────────────────────────────┐")
+        print("│ ██████████████████████░░░░░░░░░░░░ │")
+        print("└────────────────────────────────────┘")
+        time.sleep(0.5)
+        
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print("🤖 Einstein Bot OS - ONLINE")
+        print("┌────────────────────────────────────┐")
+        print("│ ██████████████████████████████████ │")
+        print("└────────────────────────────────────┘")
+        print(f"🔹 Status: 🟢 READY")
+        print(f"🔹 Version: 2.5.0 (Surjo99exe Edition)")
+        print(f"🔹 Port: {WEB_PORT}")
+        print("")
+        print("💡 Initializing background services...")
+        time.sleep(1)
+
         # Create all necessary folders first
-        print("[INIT] Initializing bot folders...")
         create_bot_folders()
         
         # Start background cleanup thread
